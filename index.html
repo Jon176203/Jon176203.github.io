@@ -8,7 +8,11 @@
   </head>
   <body>
     <main class="love-card">
-      <div class="title">Hành trình của tụi mình Q-Q</div>
+      <div class="hero-banner" id="heroBanner" hidden>
+        <img id="heroImage" src="" alt="Khoảnh khắc của chúng ta" loading="lazy" />
+      </div>
+      <div class="title" id="storyTitle">Hành trình của tụi mình</div>
+      <p class="story-subtitle" id="storySubtitle" hidden></p>
       <section class="couple">
         <div class="person">
           <div class="avatar">
@@ -49,26 +53,33 @@
         </div>
         <div class="days-counter" id="dayCount">0 ngày bên nhau</div>
       </section>
+      <button class="timeline-toggle" id="timelineToggle" type="button">
+        Xem cột mốc yêu thương
+      </button>
+      <section class="timeline" id="timelineSection" aria-hidden="true">
+        <div class="timeline-grid" id="timelineGrid"></div>
+      </section>
       <footer>
         <span>Cập nhật tự động mỗi ngày — thiết kế bởi hai ta</span>
       </footer>
     </main>
 
     <script>
-      const config = {
-        personA: {
-          name: "Nguyễn Minh Quân",
-          avatar: "assets/nguyenminhquan.jpg",
-        },
-        personB: {
-          name: "Châu Nguyễn Diễm Quỳnh",
-          avatar: "assets/diemquynh.jpg",
-        },
-        startDate: "2025-10-25",
-      };
-
-      let startDate;
+      const DATA_URL = "data/story.json";
       const MILLIS_PER_DAY = 1000 * 60 * 60 * 24;
+
+      let storyConfig = null;
+      let startDate;
+
+      async function loadStoryConfig() {
+        const response = await fetch(DATA_URL, { cache: "no-store" });
+
+        if (!response.ok) {
+          throw new Error(`Không thể tải dữ liệu (${response.status})`);
+        }
+
+        return response.json();
+      }
 
       function formatDate(dateString) {
         const [year, month, day] = dateString.split("-");
@@ -79,15 +90,168 @@
         return value.toString().padStart(2, "0");
       }
 
-      function applyConfig() {
-        document.getElementById("nameA").textContent = config.personA.name;
-        document.getElementById("nameB").textContent = config.personB.name;
-        document.getElementById("avatarA").src = config.personA.avatar;
-        document.getElementById("avatarB").src = config.personB.avatar;
-        document.getElementById("sinceDate").textContent = formatDate(config.startDate);
+      function applyConfig(config) {
+        storyConfig = config;
 
-        startDate = new Date(`${config.startDate}T00:00:00`);
-        startDate.setHours(0, 0, 0, 0);
+        const {
+          title,
+          subtitle,
+          startDate: startDateString,
+          hero,
+          people: { personA, personB } = {},
+          timeline = [],
+        } = config;
+
+        const titleElement = document.getElementById("storyTitle");
+        if (titleElement && title) {
+          titleElement.textContent = title;
+        }
+
+        const subtitleElement = document.getElementById("storySubtitle");
+        if (subtitleElement) {
+          if (subtitle) {
+            subtitleElement.textContent = subtitle;
+            subtitleElement.hidden = false;
+          } else {
+            subtitleElement.hidden = true;
+          }
+        }
+
+        const heroBanner = document.getElementById("heroBanner");
+        const heroImage = document.getElementById("heroImage");
+        if (heroBanner && heroImage) {
+          if (hero?.image) {
+            heroImage.src = hero.image;
+            heroImage.alt = hero.alt || "Khoảnh khắc của chúng ta";
+            heroBanner.hidden = false;
+          } else {
+            heroBanner.hidden = true;
+          }
+        }
+
+        const nameAElement = document.getElementById("nameA");
+        const avatarAElement = document.getElementById("avatarA");
+        if (personA && nameAElement && avatarAElement) {
+          nameAElement.textContent = personA.name || "Người ấy";
+          if (personA.avatar) {
+            avatarAElement.src = personA.avatar;
+          }
+          avatarAElement.alt = personA.name || "Người ấy";
+        }
+
+        const nameBElement = document.getElementById("nameB");
+        const avatarBElement = document.getElementById("avatarB");
+        if (personB && nameBElement && avatarBElement) {
+          nameBElement.textContent = personB.name || "Người ấy";
+          if (personB.avatar) {
+            avatarBElement.src = personB.avatar;
+          }
+          avatarBElement.alt = personB.name || "Người ấy";
+        }
+
+        if (startDateString) {
+          document.getElementById("sinceDate").textContent = formatDate(startDateString);
+          startDate = new Date(`${startDateString}T00:00:00`);
+          startDate.setHours(0, 0, 0, 0);
+        }
+
+        renderTimeline(timeline);
+      }
+
+      function isVideoMedia(media) {
+        if (!media || !media.src) return false;
+        const declaredType = media.type?.toLowerCase();
+        if (declaredType === "video") return true;
+        const videoExtensions = ["mp4", "webm", "ogg", "mov", "m4v"];
+        const extension = media.src.split("?")[0].split(".").pop()?.toLowerCase();
+        return extension ? videoExtensions.includes(extension) : false;
+      }
+
+      function renderMediaFigure(media, options = {}) {
+        const { fallbackTitle = "", isPrimary = false } = options;
+        if (!media || !media.src) return "";
+
+        const captionText = media.caption || media.alt || fallbackTitle;
+        const figureClass = isPrimary ? "timeline-card__media" : "timeline-card__gallery-item";
+
+        const videoAttributes = [];
+        if (media.poster) {
+          videoAttributes.push(`poster="${media.poster}"`);
+        }
+
+        const mediaContent = isVideoMedia(media)
+          ? `<video controls playsinline preload="metadata" ${videoAttributes.join(" ")}>
+                <source src="${media.src}" ${media.mimeType ? `type="${media.mimeType}"` : ""} />
+                Trình duyệt của bạn không hỗ trợ video.
+              </video>`
+          : `<img src="${media.src}" alt="${media.alt || fallbackTitle}" loading="lazy" />`;
+
+        return `
+          <figure class="${figureClass}">
+            ${mediaContent}
+            ${captionText ? `<figcaption class="timeline-card__caption${
+              isPrimary ? "" : " timeline-card__caption--secondary"
+            }">${captionText}</figcaption>` : ""}
+          </figure>
+        `;
+      }
+
+      function createTimelineGallery(mediaItems, fallbackTitle) {
+        if (!Array.isArray(mediaItems) || mediaItems.length === 0) {
+          return { main: "", gallery: "" };
+        }
+
+        const [primary, ...rest] = mediaItems;
+
+        const main = renderMediaFigure(primary, { fallbackTitle, isPrimary: true });
+
+        const gallery = rest.length
+          ? `<div class="timeline-card__gallery">${rest
+              .map((item) => renderMediaFigure(item, { fallbackTitle }))
+              .join("")}</div>`
+          : "";
+
+        return { main, gallery };
+      }
+
+      function createTimelineCard(entry) {
+        const { date, title, description, location, images } = entry;
+        const formattedDate = formatDate(date);
+        const { main, gallery } = createTimelineGallery(images, title);
+        const hasMainImage = Boolean(main);
+        const cardClass = `timeline-card${hasMainImage ? "" : " timeline-card--compact"}`;
+
+        return `
+          <article class="${cardClass}">
+            ${main}
+            <div class="timeline-card__body">
+              <span class="timeline-card__date">${formattedDate}</span>
+              <h3 class="timeline-card__title">${title}</h3>
+              ${location ? `<span class="timeline-card__location">${location}</span>` : ""}
+              ${
+                description
+                  ? `<p class="timeline-card__description">${description}</p>`
+                  : ""
+              }
+              ${gallery}
+            </div>
+          </article>
+        `;
+      }
+
+      function renderTimeline(entries) {
+        const grid = document.getElementById("timelineGrid");
+
+        if (!grid) return;
+
+        if (!Array.isArray(entries) || entries.length === 0) {
+          grid.innerHTML =
+            '<p class="timeline-empty">Chưa có cột mốc nào — cùng nhau tạo nên nhé!</p>';
+          return;
+        }
+
+        const sorted = [...entries].sort((a, b) => new Date(a.date) - new Date(b.date));
+        grid.innerHTML = sorted.map(createTimelineCard).join("");
       }
 
       function calculateDurations(now = new Date()) {
@@ -165,14 +329,44 @@
         document.getElementById("liveClock").textContent = `${hours} : ${minutes} : ${seconds}`;
       }
 
-      applyConfig();
-      updateDurations();
-      updateClock();
+      function displayError(message) {
+        const grid = document.getElementById("timelineGrid");
+        if (grid) {
+          grid.innerHTML = `<p class="timeline-empty">${message}</p>`;
+        }
+      }
 
-      setInterval(() => {
-        updateDurations();
-        updateClock();
-      }, 1000);
+      async function initStory() {
+        try {
+          const data = await loadStoryConfig();
+          applyConfig(data);
+          updateDurations();
+          updateClock();
+
+          setInterval(() => {
+            updateDurations();
+            updateClock();
+          }, 1000);
+        } catch (error) {
+          console.error(error);
+          displayError("Không thể tải dữ liệu câu chuyện. Vui lòng thử lại sau.");
+        }
+      }
+
+      const timelineToggle = document.getElementById("timelineToggle");
+      const timelineSection = document.getElementById("timelineSection");
+
+      if (timelineToggle && timelineSection) {
+        timelineToggle.addEventListener("click", () => {
+          const isOpen = timelineSection.classList.toggle("open");
+          timelineSection.setAttribute("aria-hidden", (!isOpen).toString());
+          timelineToggle.textContent = isOpen
+            ? "Ẩn cột mốc yêu thương"
+            : "Xem cột mốc yêu thương";
+        });
+      }
+
+      initStory();
     </script>
   </body>
 </html>

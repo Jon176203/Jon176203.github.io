@@ -1,0 +1,57 @@
+{
+  "title": "Hành trình của Quân và Quỳnh",
+  "subtitle": "Ghi lại từng khoảnh khắc yêu thương của tụi mình",
+  "startDate": "2025-10-25",
+  "hero": {
+    "alt": "Khoảnh khắc bên nhau của Quân và Quỳnh"
+  },
+  "people": {
+    "personA": {
+      "name": "Nguyễn Minh Quân",
+      "avatar": "assets/nguyenminhquan.jpg"
+    },
+    "personB": {
+      "name": "Châu Nguyễn Diễm Quỳnh",
+      "avatar": "assets/diemquynh.jpg"
+    }
+  },
+  "timeline": [
+    {
+        "date": "2025-11-02",
+        "title": "Buổi hẹn đầu",
+        "location": "Dạo và xem phim",
+        "description": "Ẻm bảo tìm cổng đen là trọ ẻm 🤡, quằng xí thì gặp nhau rồi đi xem phim.Coi bộ ngày đầu hơi nhút nhát",
+        "images": [
+          {
+            "src": "assets/quanchodoi.jpg",
+            "alt": "Buổi hẹn đầu"
+          },
+          {
+            "type": "video",
+            "src": "assets/video/video.mp4",
+            "poster": "https://images.unsplash.com/photo-1466978913421-dad2ebd01d17?auto=format&fit=crop&w=900&q=80",
+            "caption": "Đoạn clip ngắn ghi lại lúc nắm tay chạy dưới mưa"
+          }
+
+        ]
+      },
+    {
+      "date": "2025-10-25",
+      "title": "Tỏ tình",
+      "location": "Công viên sáng tạo",
+      "description": "Quân tặng hoa và ngỏ lời thế là Quỳnh đồng ý thành người yêu. Trấn động đến mức ông trời hôm đó khóc luôn :> mưa to voãi.",
+      "images": [
+        {
+          "src": "assets/quantanghoa.jpg",
+          "alt": "Khoảnh khắc tỏ tình"
+        },
+        {
+            "src": "assets/hoa.jpg",
+            "alt": "Sáng Quân chuẩn bị hoa sợ bị héo nên cho vào tủ lạnh ^^"
+          }
+      ]
+    }
+
+  ]
+}
+
