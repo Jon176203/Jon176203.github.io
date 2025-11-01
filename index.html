@@ -64,12 +64,40 @@
       </footer>
     </main>
 
+    <div class="lightbox" id="lightbox" hidden>
+      <div class="lightbox__backdrop" data-lightbox-close></div>
+      <div class="lightbox__dialog" role="dialog" aria-modal="true" aria-label="Xem hình ảnh chi tiết">
+        <button class="lightbox__close" type="button" data-lightbox-close aria-label="Đóng">×</button>
+        <div class="lightbox__media" id="lightboxMedia"></div>
+        <p class="lightbox__caption" id="lightboxCaption"></p>
+      </div>
+    </div>
+
     <script>
       const DATA_URL = "data/story.json";
       const MILLIS_PER_DAY = 1000 * 60 * 60 * 24;
 
       let storyConfig = null;
       let startDate;
+
+      const LIGHTBOX_TRIGGER_SELECTOR = "[data-media-trigger]";
+      let lightboxElement;
+      let lightboxMediaContainer;
+      let lightboxCaptionElement;
+      let lastFocusedMediaTrigger = null;
+
+      function escapeHtml(value = "") {
+        return value
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function escapeAttribute(value = "") {
+        return escapeHtml(value);
+      }
 
       async function loadStoryConfig() {
         const response = await fetch(DATA_URL, { cache: "no-store" });
@@ -171,27 +199,42 @@
         const { fallbackTitle = "", isPrimary = false } = options;
         if (!media || !media.src) return "";
 
+        const isVideo = isVideoMedia(media);
         const captionText = media.caption || media.alt || fallbackTitle;
+        const safeCaption = captionText ? escapeHtml(captionText) : "";
         const figureClass = isPrimary ? "timeline-card__media" : "timeline-card__gallery-item";
 
-        const videoAttributes = [];
+        const datasetAttributes = [
+          'data-media-trigger="true"',
+          `data-media-type="${isVideo ? "video" : "image"}"`,
+          `data-media-src="${escapeAttribute(media.src)}"`,
+        ];
+
         if (media.poster) {
-          videoAttributes.push(`poster="${media.poster}"`);
+          datasetAttributes.push(`data-media-poster="${escapeAttribute(media.poster)}"`);
         }
 
-        const mediaContent = isVideoMedia(media)
-          ? `<video controls playsinline preload="metadata" ${videoAttributes.join(" ")}>
+        if (media.mimeType) {
+          datasetAttributes.push(`data-media-mime="${escapeAttribute(media.mimeType)}"`);
+        }
+
+        if (captionText) {
+          datasetAttributes.push(`data-media-caption="${escapeAttribute(captionText)}"`);
+        }
+
+        const mediaContent = isVideo
+          ? `<video playsinline preload="metadata" muted>
                 <source src="${media.src}" ${media.mimeType ? `type="${media.mimeType}"` : ""} />
                 Trình duyệt của bạn không hỗ trợ video.
               </video>`
-          : `<img src="${media.src}" alt="${media.alt || fallbackTitle}" loading="lazy" />`;
+          : `<img src="${media.src}" alt="${escapeAttribute(media.alt || fallbackTitle)}" loading="lazy" />`;
 
         return `
-          <figure class="${figureClass}">
+          <figure class="${figureClass}" tabindex="0" ${datasetAttributes.join(" ")}>
             ${mediaContent}
-            ${captionText ? `<figcaption class="timeline-card__caption${
+            ${safeCaption ? `<figcaption class="timeline-card__caption${
               isPrimary ? "" : " timeline-card__caption--secondary"
-            }">${captionText}</figcaption>` : ""}
+            }">${safeCaption}</figcaption>` : ""}
           </figure>
         `;
       }
@@ -250,9 +293,151 @@
           return;
         }
 
-        const sorted = [...entries].sort((a, b) => new Date(a.date) - new Date(b.date));
-        grid.innerHTML = sorted.map(createTimelineCard).join("");
+        const orderedEntries = entries.slice();
+        grid.innerHTML = orderedEntries.map(createTimelineCard).join("");
+        attachLightboxHandlers();
       }
+
+      function openLightbox({ type, src, poster, caption, mime }) {
+        if (!lightboxElement || !lightboxMediaContainer) return;
+
+        lightboxMediaContainer.innerHTML = "";
+
+        let mediaElement;
+        if (type === "video") {
+          mediaElement = document.createElement("video");
+          mediaElement.controls = true;
+          mediaElement.autoplay = true;
+          mediaElement.playsInline = true;
+          mediaElement.preload = "metadata";
+          if (poster) {
+            mediaElement.poster = poster;
+          }
+
+          const source = document.createElement("source");
+          source.src = src;
+          if (mime) {
+            source.type = mime;
+          }
+          mediaElement.appendChild(source);
+        } else {
+          mediaElement = document.createElement("img");
+          mediaElement.src = src;
+          mediaElement.alt = caption || "";
+        }
+
+        lightboxMediaContainer.appendChild(mediaElement);
+
+        if (lightboxCaptionElement) {
+          if (caption) {
+            lightboxCaptionElement.textContent = caption;
+            lightboxCaptionElement.classList.remove("lightbox__caption--hidden");
+          } else {
+            lightboxCaptionElement.textContent = "";
+            lightboxCaptionElement.classList.add("lightbox__caption--hidden");
+          }
+        }
+
+        lightboxElement.removeAttribute("hidden");
+        lightboxElement.classList.add("lightbox--open");
+        document.body.classList.add("lightbox-open");
+
+        const closeButton = lightboxElement.querySelector(".lightbox__close");
+        closeButton?.focus();
+      }
+
+      function closeLightbox() {
+        if (!lightboxElement || !lightboxElement.classList.contains("lightbox--open")) {
+          return;
+        }
+
+        const activeVideo = lightboxMediaContainer?.querySelector("video");
+        if (activeVideo) {
+          activeVideo.pause();
+          activeVideo.removeAttribute("src");
+          activeVideo.load();
+        }
+
+        if (lightboxMediaContainer) {
+          lightboxMediaContainer.innerHTML = "";
+        }
+
+        lightboxElement.classList.remove("lightbox--open");
+        lightboxElement.setAttribute("hidden", "");
+        document.body.classList.remove("lightbox-open");
+
+        if (lastFocusedMediaTrigger) {
+          lastFocusedMediaTrigger.focus();
+        }
+      }
+
+      function handleMediaTriggerActivation(trigger) {
+        if (!trigger) return;
+        lastFocusedMediaTrigger = trigger;
+
+        openLightbox({
+          type: trigger.dataset.mediaType,
+          src: trigger.dataset.mediaSrc,
+          poster: trigger.dataset.mediaPoster,
+          caption: trigger.dataset.mediaCaption,
+          mime: trigger.dataset.mediaMime,
+        });
+      }
+
+      function handleMediaTriggerClick(event) {
+        event.preventDefault();
+        handleMediaTriggerActivation(event.currentTarget);
+      }
+
+      function handleMediaTriggerKeydown(event) {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          handleMediaTriggerActivation(event.currentTarget);
+        }
+      }
+
+      function attachLightboxHandlers() {
+        const triggers = document.querySelectorAll(LIGHTBOX_TRIGGER_SELECTOR);
+        triggers.forEach((trigger) => {
+          if (trigger.dataset.lightboxBound === "true") {
+            return;
+          }
+
+          trigger.dataset.lightboxBound = "true";
+          trigger.addEventListener("click", handleMediaTriggerClick);
+          trigger.addEventListener("keydown", handleMediaTriggerKeydown);
+        });
+      }
+
+      function setupLightboxInfrastructure() {
+        lightboxElement = document.getElementById("lightbox");
+        lightboxMediaContainer = document.getElementById("lightboxMedia");
+        lightboxCaptionElement = document.getElementById("lightboxCaption");
+
+        if (!lightboxElement) {
+          return;
+        }
+
+        lightboxElement.addEventListener("click", (event) => {
+          if (event.target && "lightboxClose" in event.target.dataset) {
+            closeLightbox();
+          }
+        });
+
+        const closeButtons = lightboxElement.querySelectorAll("[data-lightbox-close]");
+        closeButtons.forEach((button) => {
+          button.addEventListener("click", (event) => {
+            event.preventDefault();
+            closeLightbox();
+          });
+        });
+      }
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          closeLightbox();
+        }
+      });
 
       function calculateDurations(now = new Date()) {
         if (!startDate) {
@@ -366,6 +551,7 @@
         });
       }
 
+      setupLightboxInfrastructure();
       initStory();
     </script>
   </body>
