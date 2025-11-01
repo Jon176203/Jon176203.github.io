@@ -3,12 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Nhật ký yêu thương</title>
+    <title>Tụi mình</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <main class="love-card">
-      <div class="title">Hành trình của chúng ta</div>
+      <div class="title">Hành trình của tụi mình Q-Q</div>
       <section class="couple">
         <div class="person">
           <div class="avatar">
@@ -24,8 +24,31 @@
           <div class="name-tag" id="nameB">Tên người B</div>
         </div>
       </section>
-      <div class="days-counter" id="dayCount">0 ngày bên nhau</div>
-      <div class="since-date" id="sinceDate">Bắt đầu từ ngày 25/10/2024</div>
+      <section class="time-tracker">
+        <div class="time-cards">
+          <div class="time-card">
+            <span class="time-value" id="yearsValue">0</span>
+            <span class="time-label">Năm</span>
+          </div>
+          <div class="time-card">
+            <span class="time-value" id="monthsValue">0</span>
+            <span class="time-label">Tháng</span>
+          </div>
+          <div class="time-card">
+            <span class="time-value" id="weeksValue">0</span>
+            <span class="time-label">Tuần</span>
+          </div>
+          <div class="time-card">
+            <span class="time-value" id="daysValue">0</span>
+            <span class="time-label">Ngày</span>
+          </div>
+        </div>
+        <div class="time-meta">
+          <span class="since-pill" id="sinceDate">25/10/2025</span>
+          <span class="clock" id="liveClock">00 : 00 : 00</span>
+        </div>
+        <div class="days-counter" id="dayCount">0 ngày bên nhau</div>
+      </section>
       <footer>
         <span>Cập nhật tự động mỗi ngày — thiết kế bởi hai ta</span>
       </footer>
@@ -34,19 +57,26 @@
     <script>
       const config = {
         personA: {
-          name: "Tên người A",
-          avatar: "https://i.pravatar.cc/400?img=32",
+          name: "Nguyễn Minh Quân",
+          avatar: "assets/nguyenminhquan.jpg",
         },
         personB: {
-          name: "Tên người B",
-          avatar: "https://i.pravatar.cc/400?img=47",
+          name: "Châu Nguyễn Diễm Quỳnh",
+          avatar: "assets/diemquynh.jpg",
         },
-        startDate: "2024-10-25",
+        startDate: "2025-10-25",
       };
+
+      let startDate;
+      const MILLIS_PER_DAY = 1000 * 60 * 60 * 24;
 
       function formatDate(dateString) {
         const [year, month, day] = dateString.split("-");
         return `${day}/${month}/${year}`;
+      }
+
+      function padTwo(value) {
+        return value.toString().padStart(2, "0");
       }
 
       function applyConfig() {
@@ -54,32 +84,95 @@
         document.getElementById("nameB").textContent = config.personB.name;
         document.getElementById("avatarA").src = config.personA.avatar;
         document.getElementById("avatarB").src = config.personB.avatar;
-        document.getElementById("sinceDate").textContent = `Bắt đầu từ ngày ${formatDate(
-          config.startDate
-        )}`;
+        document.getElementById("sinceDate").textContent = formatDate(config.startDate);
+
+        startDate = new Date(`${config.startDate}T00:00:00`);
+        startDate.setHours(0, 0, 0, 0);
       }
 
-      function updateDayCount() {
-        const startDate = new Date(`${config.startDate}T00:00:00`);
-        const today = new Date();
-        const utcToday = Date.UTC(
-          today.getFullYear(),
-          today.getMonth(),
-          today.getDate()
-        );
-        const utcStart = Date.UTC(
-          startDate.getFullYear(),
-          startDate.getMonth(),
-          startDate.getDate()
-        );
+      function calculateDurations(now = new Date()) {
+        if (!startDate) {
+          return { years: 0, months: 0, weeks: 0, days: 0, totalDaysSinceStart: 0 };
+        }
 
-        const diffDays = Math.floor((utcToday - utcStart) / (1000 * 60 * 60 * 24)) + 1;
-        const dayLabel = diffDays > 1 ? "ngày" : "ngày";
-        document.getElementById("dayCount").textContent = `${diffDays} ${dayLabel} bên nhau`;
+        const reference = new Date(now.getTime());
+        reference.setHours(0, 0, 0, 0);
+
+        let cursor = new Date(startDate.getTime());
+        let years = 0;
+
+        while (true) {
+          const next = new Date(cursor);
+          next.setFullYear(next.getFullYear() + 1);
+          if (next <= reference) {
+            years += 1;
+            cursor = next;
+          } else {
+            break;
+          }
+        }
+
+        let months = 0;
+        while (true) {
+          const next = new Date(cursor);
+          next.setMonth(next.getMonth() + 1);
+          if (next <= reference) {
+            months += 1;
+            cursor = next;
+          } else {
+            break;
+          }
+        }
+
+        const remainingMs = reference - cursor;
+        const totalDaysRemainder = Math.floor(remainingMs / MILLIS_PER_DAY);
+        const weeks = Math.floor(totalDaysRemainder / 7);
+        const days = totalDaysRemainder % 7;
+
+        const totalDaysSinceStart =
+          Math.floor(
+            (Date.UTC(
+              reference.getFullYear(),
+              reference.getMonth(),
+              reference.getDate()
+            ) -
+              Date.UTC(
+                startDate.getFullYear(),
+                startDate.getMonth(),
+                startDate.getDate()
+              )) /
+              MILLIS_PER_DAY
+          ) + 1;
+
+        return { years, months, weeks, days, totalDaysSinceStart };
+      }
+
+      function updateDurations() {
+        const { years, months, weeks, days, totalDaysSinceStart } = calculateDurations();
+
+        document.getElementById("yearsValue").textContent = padTwo(years);
+        document.getElementById("monthsValue").textContent = padTwo(months);
+        document.getElementById("weeksValue").textContent = padTwo(weeks);
+        document.getElementById("daysValue").textContent = padTwo(days);
+        document.getElementById("dayCount").textContent = `${totalDaysSinceStart} ngày bên nhau`;
+      }
+
+      function updateClock() {
+        const now = new Date();
+        const hours = padTwo(now.getHours());
+        const minutes = padTwo(now.getMinutes());
+        const seconds = padTwo(now.getSeconds());
+        document.getElementById("liveClock").textContent = `${hours} : ${minutes} : ${seconds}`;
       }
 
       applyConfig();
-      updateDayCount();
+      updateDurations();
+      updateClock();
+
+      setInterval(() => {
+        updateDurations();
+        updateClock();
+      }, 1000);
     </script>
   </body>
 </html>

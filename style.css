@@ -41,16 +41,16 @@ body {
 .couple {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: clamp(16px, 5vw, 48px);
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .person {
   display: flex;
   flex-direction: column;
   align-items: center;
-  flex: 1 1 180px;
+  flex: 1 1 140px;
   gap: 16px;
 }
 
@@ -101,15 +101,105 @@ body {
   color: var(--accent);
 }
 
-.since-date {
-  margin-top: 12px;
-  font-size: clamp(16px, 3vw, 20px);
-  opacity: 0.9;
-}
-
 footer {
   margin-top: 36px;
   font-size: 14px;
   opacity: 0.7;
+}
+
+.time-tracker {
+  margin-top: clamp(32px, 7vw, 56px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(20px, 5vw, 28px);
+  width: 100%;
+}
+
+.time-cards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(12px, 3vw, 20px);
+  width: 100%;
+}
+
+.time-card {
+  flex: 1 1 120px;
+  max-width: 150px;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 24px;
+  padding: clamp(16px, 4vw, 24px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 12px 24px rgba(255, 71, 126, 0.18);
+  backdrop-filter: blur(6px);
+}
+
+.time-value {
+  font-size: clamp(28px, 7vw, 40px);
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.time-label {
+  font-size: 14px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-color);
+  opacity: 0.85;
+}
+
+.time-meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(12px, 4vw, 24px);
+  flex-wrap: wrap;
+}
+
+.since-pill {
+  background: rgba(255, 255, 255, 0.75);
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-size: 14px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-color);
+  box-shadow: 0 6px 14px rgba(255, 71, 126, 0.15);
+}
+
+.clock {
+  font-size: clamp(18px, 5vw, 24px);
+  font-weight: 600;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 4px;
+}
+
+@media (max-width: 420px) {
+  .love-card {
+    padding: 36px 24px;
+  }
+
+  .person {
+    flex: 1 1 120px;
+  }
+
+  .avatar {
+    width: clamp(96px, 28vw, 120px);
+    border-width: 4px;
+  }
+
+  .heart {
+    font-size: clamp(36px, 10vw, 52px);
+  }
+
+  .couple {
+    gap: 16px;
+  }
 }
 
