@@ -24,12 +24,12 @@
         "images": [
           {
             "src": "assets/quanchodoi.jpg",
-            "alt": "Buổi hẹn đầu"
+            "alt": "Đợi ẻm"
           },
           {
             "type": "video",
             "src": "assets/video/video.mp4",
-            "caption": "Đoạn clip ngắn ghi lại lúc nắm tay chạy dưới mưa"
+            "caption": "Lạc đường nha má"
           }
         ]
       },
@@ -41,7 +41,7 @@
       "images": [
         {
           "src": "assets/quantanghoa.jpg",
-          "alt": "Khoảnh khắc tỏ tình"
+          "alt": "Hoa tặng ẻm"
         },
         {
             "src": "assets/hoa.jpg",
