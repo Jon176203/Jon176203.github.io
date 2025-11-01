@@ -33,6 +33,8 @@
       name="twitter:image"
       content="https://jon176203.github.io/assets/quanchodoi.jpg"
     />
+    <link rel="icon" type="image/svg+xml" href="assets/heart-favicon.svg" />
+    <link rel="alternate icon" href="assets/heart-favicon.svg" />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
@@ -62,6 +64,7 @@
             <img id="avatarA" src="assets/nguyenminhquan.jpg" alt="Nguyễn Minh Quân" />
           </div>
           <div class="name-tag" id="nameA">Tên người A</div>
+          <div class="zodiac-tag" id="zodiacA" hidden>Cung hoàng đạo</div>
         </div>
         <div class="heart">❤</div>
         <div class="person">
@@ -69,32 +72,58 @@
             <img id="avatarB" src="assets/diemquynh.jpg" alt="Châu Nguyễn Diễm Quỳnh" />
           </div>
           <div class="name-tag" id="nameB">Tên người B</div>
+          <div class="zodiac-tag" id="zodiacB" hidden>Cung hoàng đạo</div>
         </div>
       </section>
       <section class="time-tracker">
-        <div class="time-cards">
-          <div class="time-card">
-            <span class="time-value" id="yearsValue">0</span>
-            <span class="time-label">Năm</span>
+        <div class="time-slider" id="timeSlider" aria-live="polite">
+          <div class="time-slide time-slide--metrics" data-active="true">
+            <div class="time-cards">
+              <div class="time-card">
+                <span class="time-value" id="yearsValue">0</span>
+                <span class="time-label">Năm</span>
+              </div>
+              <div class="time-card">
+                <span class="time-value" id="monthsValue">0</span>
+                <span class="time-label">Tháng</span>
+              </div>
+              <div class="time-card">
+                <span class="time-value" id="weeksValue">0</span>
+                <span class="time-label">Tuần</span>
+              </div>
+              <div class="time-card">
+                <span class="time-value" id="daysValue">0</span>
+                <span class="time-label">Ngày</span>
+              </div>
+            </div>
+            <div class="time-meta">
+              <span class="since-pill" id="sinceDate">25/10/2025</span>
+              <span class="clock" id="liveClock">00 : 00 : 00</span>
+            </div>
           </div>
-          <div class="time-card">
-            <span class="time-value" id="monthsValue">0</span>
-            <span class="time-label">Tháng</span>
-          </div>
-          <div class="time-card">
-            <span class="time-value" id="weeksValue">0</span>
-            <span class="time-label">Tuần</span>
-          </div>
-          <div class="time-card">
-            <span class="time-value" id="daysValue">0</span>
-            <span class="time-label">Ngày</span>
+          <div class="time-slide time-slide--days" data-active="false">
+            <div class="days-panel">
+              <div class="days-counter" id="dayCount">0 ngày bên nhau</div>
+              <p class="days-subtext">Cùng nhau viết tiếp câu chuyện yêu thương nha :33</p>
+            </div>
           </div>
         </div>
-        <div class="time-meta">
-          <span class="since-pill" id="sinceDate">25/10/2025</span>
-          <span class="clock" id="liveClock">00 : 00 : 00</span>
+        <div class="time-indicators" id="timeDots" role="tablist" aria-label="Chuyển đổi hiển thị thời gian">
+          <button
+            type="button"
+            class="time-indicator is-active"
+            data-time-dot="0"
+            aria-label="Xem chi tiết theo năm tháng"
+            aria-pressed="true"
+          ></button>
+          <button
+            type="button"
+            class="time-indicator"
+            data-time-dot="1"
+            aria-label="Xem tổng số ngày bên nhau"
+            aria-pressed="false"
+          ></button>
         </div>
-        <div class="days-counter" id="dayCount">0 ngày bên nhau</div>
       </section>
       <button class="timeline-toggle" id="timelineToggle" type="button">
         Xem cột mốc yêu thương
@@ -119,6 +148,22 @@
     <script>
       const DATA_URL = "data/story.json";
       const MILLIS_PER_DAY = 1000 * 60 * 60 * 24;
+      const ZODIAC_SYMBOLS = {
+        "bach duong": "♈",
+        "kim nguu": "♉",
+        "song tu": "♊",
+        "cu giai": "♋",
+        "su tu": "♌",
+        "xu nu": "♍",
+        "thien binh": "♎",
+        "bo cap": "♏",
+        "nhan ma": "♐",
+        "ma ket": "♑",
+        "bao binh": "♒",
+        "song ngu": "♓",
+        gemini: "♊",
+        scorpio: "♏",
+      };
 
       let storyConfig = null;
       let startDate;
@@ -140,6 +185,176 @@
 
       function escapeAttribute(value = "") {
         return escapeHtml(value);
+      }
+
+      function normalizeZodiacKey(value = "") {
+        return value
+          .toString()
+          .trim()
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "");
+      }
+
+      function getZodiacSymbol(name = "") {
+        const key = normalizeZodiacKey(name);
+        return ZODIAC_SYMBOLS[key] || "";
+      }
+
+      function renderZodiacTag(element, zodiacName) {
+        if (!element) return;
+
+        if (!zodiacName) {
+          element.hidden = true;
+          element.innerHTML = "";
+          return;
+        }
+
+        const symbol = getZodiacSymbol(zodiacName);
+        const safeName = escapeHtml(zodiacName);
+        const iconMarkup = symbol
+          ? `<span class="zodiac-icon" aria-hidden="true">${symbol}</span>`
+          : "";
+
+        element.innerHTML = `${iconMarkup}<span class="zodiac-label">${safeName}</span>`;
+        element.hidden = false;
+      }
+
+      function setupTimeSlider() {
+        const slider = document.getElementById("timeSlider");
+        const dotsContainer = document.getElementById("timeDots");
+        if (!slider || !dotsContainer) {
+          return;
+        }
+
+        const slides = Array.from(slider.querySelectorAll(".time-slide"));
+        const dotButtons = Array.from(dotsContainer.querySelectorAll("[data-time-dot]"));
+
+        if (!slides.length || dotButtons.length !== slides.length) {
+          return;
+        }
+
+        let currentIndex = 0;
+        const maxIndex = slides.length - 1;
+        const swipeThreshold = 48;
+        let pointerStartX = 0;
+        let pointerActive = false;
+
+        function updateDots() {
+          dotButtons.forEach((dot, index) => {
+            const isActive = index === currentIndex;
+            dot.classList.toggle("is-active", isActive);
+            dot.setAttribute("aria-pressed", isActive.toString());
+          });
+        }
+
+        function clampIndex(index) {
+          return Math.max(0, Math.min(index, maxIndex));
+        }
+
+        function updateSlides() {
+          slides.forEach((slide, index) => {
+            slide.dataset.active = index === currentIndex ? "true" : "false";
+          });
+          slider.dataset.activeIndex = String(currentIndex);
+        }
+
+        function goToSlide(index) {
+          currentIndex = clampIndex(index);
+          updateSlides();
+          updateDots();
+        }
+
+        function handleDotInteraction(event) {
+          const target = event.currentTarget;
+          const index = Number.parseInt(target.dataset.timeDot, 10);
+          if (Number.isNaN(index)) {
+            return;
+          }
+
+          event.preventDefault();
+          goToSlide(index);
+        }
+
+        dotButtons.forEach((dot) => {
+          dot.addEventListener("click", handleDotInteraction);
+          dot.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              handleDotInteraction(event);
+            }
+          });
+        });
+
+        function finalizeSwipe(deltaX) {
+          if (Math.abs(deltaX) > swipeThreshold) {
+            goToSlide(currentIndex + (deltaX < 0 ? 1 : -1));
+          } else {
+            goToSlide(currentIndex);
+          }
+        }
+
+        function handlePointerDown(event) {
+          pointerActive = true;
+          pointerStartX = event.clientX;
+          if (event.pointerId !== undefined) {
+            slider.setPointerCapture(event.pointerId);
+          }
+        }
+
+        function handlePointerUp(event) {
+          if (!pointerActive) {
+            return;
+          }
+
+          const deltaX = event.clientX - pointerStartX;
+          finalizeSwipe(deltaX);
+          pointerActive = false;
+          if (event.pointerId !== undefined && slider.hasPointerCapture(event.pointerId)) {
+            slider.releasePointerCapture(event.pointerId);
+          }
+        }
+
+        function handlePointerMove(event) {
+          if (!pointerActive) {
+            return;
+          }
+
+          event.preventDefault();
+        }
+
+        function handlePointerCancel(event) {
+          pointerActive = false;
+          if (event.pointerId !== undefined && slider.hasPointerCapture(event.pointerId)) {
+            slider.releasePointerCapture(event.pointerId);
+          }
+        }
+
+        if (window.PointerEvent) {
+          slider.addEventListener("pointerdown", handlePointerDown);
+          slider.addEventListener("pointermove", handlePointerMove);
+          slider.addEventListener("pointerup", handlePointerUp);
+          slider.addEventListener("pointerleave", handlePointerUp);
+          slider.addEventListener("pointercancel", handlePointerCancel);
+        } else {
+          slider.addEventListener("touchstart", (event) => {
+            pointerActive = true;
+            pointerStartX = event.touches[0]?.clientX ?? 0;
+          });
+
+          slider.addEventListener("touchend", (event) => {
+            if (!pointerActive) return;
+            const endTouch = event.changedTouches[0];
+            const deltaX = (endTouch?.clientX ?? 0) - pointerStartX;
+            finalizeSwipe(deltaX);
+            pointerActive = false;
+          });
+
+          slider.addEventListener("touchcancel", () => {
+            pointerActive = false;
+          });
+        }
+
+        goToSlide(0);
       }
 
       async function loadStoryConfig() {
@@ -202,6 +417,7 @@
 
         const nameAElement = document.getElementById("nameA");
         const avatarAElement = document.getElementById("avatarA");
+        const zodiacAElement = document.getElementById("zodiacA");
         if (personA && nameAElement && avatarAElement) {
           nameAElement.textContent = personA.name || "Người ấy";
           if (personA.avatar) {
@@ -209,9 +425,11 @@
           }
           avatarAElement.alt = personA.name || "Người ấy";
         }
+        renderZodiacTag(zodiacAElement, personA?.zodiac);
 
         const nameBElement = document.getElementById("nameB");
         const avatarBElement = document.getElementById("avatarB");
+        const zodiacBElement = document.getElementById("zodiacB");
         if (personB && nameBElement && avatarBElement) {
           nameBElement.textContent = personB.name || "Người ấy";
           if (personB.avatar) {
@@ -219,6 +437,7 @@
           }
           avatarBElement.alt = personB.name || "Người ấy";
         }
+        renderZodiacTag(zodiacBElement, personB?.zodiac);
 
         if (startDateString) {
           document.getElementById("sinceDate").textContent = formatDate(startDateString);
@@ -546,7 +765,7 @@
         document.getElementById("monthsValue").textContent = padTwo(months);
         document.getElementById("weeksValue").textContent = padTwo(weeks);
         document.getElementById("daysValue").textContent = padTwo(days);
-        document.getElementById("dayCount").textContent = `${totalDaysSinceStart} ngày bên nhau`;
+        document.getElementById("dayCount").textContent = `Đang yêu ${totalDaysSinceStart} ngày `;
       }
 
       function updateClock() {
@@ -595,6 +814,7 @@
       }
 
       setupLightboxInfrastructure();
+      setupTimeSlider();
       initStory();
     </script>
   </body>

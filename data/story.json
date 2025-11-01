@@ -8,11 +8,13 @@
   "people": {
     "personA": {
       "name": "Nguyễn Minh Quân",
-      "avatar": "assets/nguyenminhquan.jpg"
+      "avatar": "assets/nguyenminhquan.jpg",
+      "zodiac": "Song Tử"
     },
     "personB": {
       "name": "Châu Nguyễn Diễm Quỳnh",
-      "avatar": "assets/diemquynh.jpg"
+      "avatar": "assets/diemquynh.jpg",
+      "zodiac": "Bọ Cạp"
     }
   },
   "timeline": [
