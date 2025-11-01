@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nhật ký yêu thương</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="love-card">
+      <div class="title">Hành trình của chúng ta</div>
+      <section class="couple">
+        <div class="person">
+          <div class="avatar">
+            <img id="avatarA" src="https://i.pravatar.cc/400?img=32" alt="Người yêu A" />
+          </div>
+          <div class="name-tag" id="nameA">Tên người A</div>
+        </div>
+        <div class="heart">❤</div>
+        <div class="person">
+          <div class="avatar">
+            <img id="avatarB" src="https://i.pravatar.cc/400?img=47" alt="Người yêu B" />
+          </div>
+          <div class="name-tag" id="nameB">Tên người B</div>
+        </div>
+      </section>
+      <div class="days-counter" id="dayCount">0 ngày bên nhau</div>
+      <div class="since-date" id="sinceDate">Bắt đầu từ ngày 25/10/2024</div>
+      <footer>
+        <span>Cập nhật tự động mỗi ngày — thiết kế bởi hai ta</span>
+      </footer>
+    </main>
+
+    <script>
+      const config = {
+        personA: {
+          name: "Tên người A",
+          avatar: "https://i.pravatar.cc/400?img=32",
+        },
+        personB: {
+          name: "Tên người B",
+          avatar: "https://i.pravatar.cc/400?img=47",
+        },
+        startDate: "2024-10-25",
+      };
+
+      function formatDate(dateString) {
+        const [year, month, day] = dateString.split("-");
+        return `${day}/${month}/${year}`;
+      }
+
+      function applyConfig() {
+        document.getElementById("nameA").textContent = config.personA.name;
+        document.getElementById("nameB").textContent = config.personB.name;
+        document.getElementById("avatarA").src = config.personA.avatar;
+        document.getElementById("avatarB").src = config.personB.avatar;
+        document.getElementById("sinceDate").textContent = `Bắt đầu từ ngày ${formatDate(
+          config.startDate
+        )}`;
+      }
+
+      function updateDayCount() {
+        const startDate = new Date(`${config.startDate}T00:00:00`);
+        const today = new Date();
+        const utcToday = Date.UTC(
+          today.getFullYear(),
+          today.getMonth(),
+          today.getDate()
+        );
+        const utcStart = Date.UTC(
+          startDate.getFullYear(),
+          startDate.getMonth(),
+          startDate.getDate()
+        );
+
+        const diffDays = Math.floor((utcToday - utcStart) / (1000 * 60 * 60 * 24)) + 1;
+        const dayLabel = diffDays > 1 ? "ngày" : "ngày";
+        document.getElementById("dayCount").textContent = `${diffDays} ${dayLabel} bên nhau`;
+      }
+
+      applyConfig();
+      updateDayCount();
+    </script>
+  </body>
+</html>
+
