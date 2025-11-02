@@ -66,7 +66,15 @@
           <div class="name-tag" id="nameA">Tên người A</div>
           <div class="zodiac-tag" id="zodiacA" hidden>Cung hoàng đạo</div>
         </div>
-        <div class="heart">❤</div>
+        <div
+          class="heart"
+          id="unlockHeart"
+          role="button"
+          tabindex="0"
+          aria-label="Mở khóa form thêm cột mốc bằng mật khẩu"
+        >
+          ❤
+        </div>
         <div class="person">
           <div class="avatar">
             <img id="avatarB" src="assets/diemquynh.jpg" alt="Châu Nguyễn Diễm Quỳnh" />
@@ -131,10 +139,182 @@
       <section class="timeline" id="timelineSection" aria-hidden="true">
         <div class="timeline-grid" id="timelineGrid"></div>
       </section>
+      <section class="timeline-submit" id="timelineSubmitSection" hidden>
+        <h2 class="timeline-submit__title">Thêm cột mốc yêu thương</h2>
+        <p class="timeline-submit__hint">
+          Chia sẻ khoảnh khắc đặc biệt của bạn để mọi người cùng ngắm nhé!
+        </p>
+        <form class="timeline-form" id="timelineForm" novalidate hidden>
+          <div class="timeline-form__grid">
+            <label class="timeline-form__field">
+              <span>Ngày diễn ra *</span>
+              <div class="timeline-form__date-wrapper">
+                <input
+                  type="text"
+                  id="timelineDateDisplay"
+                  class="timeline-form__date-display"
+                  placeholder="dd/mm/yyyy"
+                  readonly
+                />
+                <input
+                  type="date"
+                  name="date"
+                  id="timelineDateInput"
+                  class="timeline-form__date-input-hidden"
+                  required
+                />
+                <button
+                  type="button"
+                  class="timeline-form__date-icon"
+                  id="timelineDateIconBtn"
+                  aria-label="Mở lịch"
+                  title="Chọn ngày"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                  </svg>
+                </button>
+              </div>
+            </label>
+            <label class="timeline-form__field">
+              <span>Tiêu đề *</span>
+              <input type="text" name="title" maxlength="120" required placeholder="Ví dụ: Buổi hẹn đầu" />
+            </label>
+            <label class="timeline-form__field timeline-form__field--full">
+              <span>Địa điểm</span>
+              <input type="text" name="location" maxlength="120" placeholder="Ví dụ: Công viên sáng tạo" />
+            </label>
+            <label class="timeline-form__field timeline-form__field--full">
+              <span>Kể lại kỷ niệm</span>
+              <textarea
+                name="description"
+                rows="3"
+                maxlength="800"
+                placeholder="Bạn muốn lưu lại điều gì ở khoảnh khắc này?"
+              ></textarea>
+            </label>
+            <label class="timeline-form__field timeline-form__field--full">
+              <span>Chọn hình hoặc video từ thiết bị</span>
+              <div class="timeline-form__file-input-wrapper">
+                <input
+                  type="file"
+                  name="mediaFile"
+                  id="timelineMediaFile"
+                  accept="image/*,video/*"
+                  multiple
+                />
+                <button
+                  type="button"
+                  class="timeline-form__add-more-btn"
+                  id="timelineAddMoreMediaBtn"
+                  hidden
+                >
+                  + Thêm ảnh/video
+                </button>
+              </div>
+              <small class="timeline-form__hint">
+                Bạn có thể chọn nhiều file cùng lúc. Ảnh đầu tiên sẽ là ảnh đại diện, các ảnh sau sẽ hiển thị kèm theo.
+              </small>
+            </label>
+            <div class="timeline-media-preview" id="timelineMediaPreviewContainer" hidden>
+              <p class="timeline-media-preview__hint">
+                Kéo thả để sắp xếp thứ tự ảnh. Ảnh đầu tiên (có nhãn "Ảnh đại diện") sẽ là ảnh chính. Điền chú thích cho từng ảnh nhé 💌
+              </p>
+              <div class="timeline-media-preview__list" id="timelineMediaPreviewList"></div>
+            </div>
+          </div>
+          <button class="timeline-form__submit" id="timelineSubmitButton" type="submit">Gửi cột mốc</button>
+          <p class="timeline-form__status" id="timelineFormStatus" role="status" aria-live="polite"></p>
+        </form>
+      </section>
       <footer>
         <span></span>
       </footer>
     </main>
+
+    <div class="timeline-password-modal" id="timelinePasswordModal" hidden>
+      <div class="timeline-password-modal__backdrop" data-password-modal-close></div>
+      <div
+        class="timeline-password-modal__dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="timelinePasswordTitle"
+      >
+        <button
+          type="button"
+          class="timeline-password-modal__close"
+          data-password-modal-close
+          aria-label="Đóng"
+        >
+          ×
+        </button>
+        <h2 class="timeline-password-modal__title" id="timelinePasswordTitle">
+          Mật khẩu  💝
+        </h2>
+        <p class="timeline-password-modal__hint">
+          Nhập mật khẩu để mở khóa form thêm cột mốc nhé!
+        </p>
+        <form class="timeline-password" id="timelinePasswordForm" autocomplete="off">
+          <label class="timeline-form__field timeline-form__field--full">
+            <span>Mật khẩu *</span>
+            <div class="timeline-form__password-wrapper">
+              <input
+                type="password"
+                name="timelinePassword"
+                id="timelinePasswordInput"
+                required
+                placeholder="••••••"
+                minlength="4"
+              />
+              <button
+                type="button"
+                class="timeline-form__password-toggle"
+                id="timelinePasswordToggle"
+                aria-label="Hiện/ẩn mật khẩu"
+                title="Hiện/ẩn mật khẩu"
+              >
+                <svg
+                  class="timeline-form__password-icon timeline-form__password-icon--hidden"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                <svg
+                  class="timeline-form__password-icon timeline-form__password-icon--visible"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  style="display: none;"
+                >
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                  <line x1="1" y1="1" x2="23" y2="23"></line>
+                </svg>
+              </button>
+            </div>
+          </label>
+          <button
+            class="timeline-form__submit timeline-password__submit"
+            id="timelinePasswordUnlockButton"
+            type="submit"
+          >
+            Mở khóa
+          </button>
+          <p class="timeline-form__status" id="timelinePasswordStatus" role="status" aria-live="polite"></p>
+        </form>
+      </div>
+    </div>
 
     <div class="lightbox" id="lightbox" hidden>
       <div class="lightbox__backdrop" data-lightbox-close></div>
@@ -145,6 +325,10 @@
       </div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-storage-compat.js"></script>
+    <script src="firebase-config.js"></script>
     <script>
       const DATA_URL = "data/story.json";
       const MILLIS_PER_DAY = 1000 * 60 * 60 * 24;
@@ -165,8 +349,20 @@
         scorpio: "♏",
       };
 
+      const TIMELINE_COLLECTION = "timelineEntries";
+      const TIMELINE_FORM_PASSWORD = "tuilavoquan";
+      const STORAGE_UPLOAD_FOLDER = "timelineUploads";
+      const MAX_UPLOAD_SIZE_BYTES = 12 * 1024 * 1024; // ~12MB
+
       let storyConfig = null;
       let startDate;
+      let firestore = null;
+      let storage = null;
+      let timelineUnsubscribe = null;
+      let timelineFallback = [];
+      let isFirebaseReady = false;
+      let timelineFormUnlocked = false;
+      let timelineMediaSelections = [];
 
       const LIGHTBOX_TRIGGER_SELECTOR = "[data-media-trigger]";
       let lightboxElement;
@@ -367,9 +563,39 @@
         return response.json();
       }
 
-      function formatDate(dateString) {
-        const [year, month, day] = dateString.split("-");
-        return `${day}/${month}/${year}`;
+      function formatDate(value) {
+        if (!value) {
+          return "";
+        }
+
+        let dateObject = null;
+
+        if (value instanceof Date) {
+          dateObject = value;
+        } else if (typeof value?.toDate === "function") {
+          dateObject = value.toDate();
+        } else if (typeof value === "object" && typeof value?.seconds === "number") {
+          dateObject = new Date(value.seconds * 1000);
+        } else {
+          const stringValue = value.toString();
+          const isoMatch = stringValue.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+          if (isoMatch) {
+            return `${isoMatch[3]}/${isoMatch[2]}/${isoMatch[1]}`;
+          }
+
+          const parsed = new Date(stringValue);
+          if (!Number.isNaN(parsed.getTime())) {
+            dateObject = parsed;
+          } else {
+            return escapeHtml(stringValue);
+          }
+        }
+
+        if (!dateObject || Number.isNaN(dateObject.getTime())) {
+          return "";
+        }
+
+        return `${padTwo(dateObject.getDate())}/${padTwo(dateObject.getMonth() + 1)}/${dateObject.getFullYear()}`;
       }
 
       function padTwo(value) {
@@ -445,7 +671,11 @@
           startDate.setHours(0, 0, 0, 0);
         }
 
-        renderTimeline(timeline);
+        timelineFallback = Array.isArray(timeline) ? timeline : [];
+
+        if (!isFirebaseReady) {
+          renderTimeline(timelineFallback);
+        }
       }
 
       function isVideoMedia(media) {
@@ -519,23 +749,84 @@
         return { main, gallery };
       }
 
-      function createTimelineCard(entry) {
-        const { date, title, description, location, images } = entry;
+      function parseTimelineDate(value) {
+        if (!value) {
+          return Number.NaN;
+        }
+
+        if (value instanceof Date) {
+          return value.getTime();
+        }
+
+        if (typeof value?.toDate === "function") {
+          return value.toDate().getTime();
+        }
+
+        if (typeof value === "object" && typeof value?.seconds === "number") {
+          return value.seconds * 1000;
+        }
+
+        const stringValue = value.toString();
+        const isoMatch = stringValue.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (isoMatch) {
+          return new Date(`${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}T00:00:00`).getTime();
+        }
+
+        const parsed = new Date(stringValue);
+        return parsed.getTime();
+      }
+
+      function sortTimelineEntries(entries = []) {
+        return entries
+          .slice()
+          .sort((a, b) => {
+            const timeA = parseTimelineDate(a?.date);
+            const timeB = parseTimelineDate(b?.date);
+
+            if (Number.isNaN(timeA) && Number.isNaN(timeB)) {
+              return 0;
+            }
+            if (Number.isNaN(timeA)) {
+              return 1;
+            }
+            if (Number.isNaN(timeB)) {
+              return -1;
+            }
+
+            return timeA - timeB;
+          });
+      }
+
+      function createTimelineCard(entry = {}) {
+        const { date, title = "", description = "", location = "", images } = entry;
         const formattedDate = formatDate(date);
         const { main, gallery } = createTimelineGallery(images, title);
         const hasMainImage = Boolean(main);
         const cardClass = `timeline-card${hasMainImage ? "" : " timeline-card--compact"}`;
+        const safeTitle = escapeHtml(title);
+        const safeLocation = location ? escapeHtml(location) : "";
+        const safeDescription = description
+          ? escapeHtml(description).replace(/\n/g, "<br />")
+          : "";
 
         return `
           <article class="${cardClass}">
             ${main}
             <div class="timeline-card__body">
-              <span class="timeline-card__date">${formattedDate}</span>
-              <h3 class="timeline-card__title">${title}</h3>
-              ${location ? `<span class="timeline-card__location">${location}</span>` : ""}
               ${
-                description
-                  ? `<p class="timeline-card__description">${description}</p>`
+                formattedDate
+                  ? `<span class="timeline-card__date">${formattedDate}</span>`
+                  : ""
+              }
+              <h3 class="timeline-card__title">${safeTitle}</h3>
+              ${
+                safeLocation
+                  ? `<span class="timeline-card__location">${safeLocation}</span>`
+                  : ""
+              }
+              ${
+                safeDescription
+                  ? `<p class="timeline-card__description">${safeDescription}</p>`
                   : ""
               }
               ${gallery}
@@ -555,9 +846,901 @@
           return;
         }
 
-        const orderedEntries = entries.slice();
+        const orderedEntries = sortTimelineEntries(entries);
         grid.innerHTML = orderedEntries.map(createTimelineCard).join("");
         attachLightboxHandlers();
+      }
+
+      function setTimelineSubmitSectionVisibility(isVisible) {
+        if (!timelineSubmitSection) {
+          return;
+        }
+
+        timelineSubmitSection.hidden = !isVisible;
+        timelineSubmitSection.setAttribute("aria-hidden", (!isVisible).toString());
+        timelineSubmitSection.classList.toggle("timeline-submit--visible", Boolean(isVisible));
+      }
+
+      function setTimelineFormEnabled(isEnabled) {
+        if (!timelineForm) {
+          return;
+        }
+
+        const elements = timelineForm.querySelectorAll("input, textarea, button");
+        const enableForm = Boolean(isEnabled && timelineFormUnlocked);
+
+        elements.forEach((element) => {
+          element.disabled = !enableForm;
+        });
+
+        timelineForm.classList.toggle("timeline-form--disabled", !enableForm);
+      }
+
+      function setTimelineFormSubmitting(isSubmitting) {
+        if (!timelineForm) {
+          return;
+        }
+
+        timelineForm.classList.toggle("timeline-form--submitting", isSubmitting);
+
+        if (timelineSubmitButton) {
+          timelineSubmitButton.disabled = Boolean(isSubmitting);
+          timelineSubmitButton.dataset.loading = isSubmitting ? "true" : "false";
+        }
+      }
+
+      function focusTimelineFirstField() {
+        // Focus vào date display input first
+        const dateDisplay = document.getElementById("timelineDateDisplay");
+        if (dateDisplay) {
+          try {
+            dateDisplay.focus({ preventScroll: true });
+            return;
+          } catch (error) {
+            dateDisplay.focus();
+            return;
+          }
+        }
+
+        // Fallback to first input if date display not found
+        if (!timelineForm) {
+          return;
+        }
+
+        const candidate = timelineForm.querySelector("input, textarea, select");
+        if (!candidate || typeof candidate.focus !== "function") {
+          return;
+        }
+
+        try {
+          candidate.focus({ preventScroll: true });
+        } catch (error) {
+          candidate.focus();
+        }
+      }
+
+      function formatDateToDDMMYYYY(dateString) {
+        if (!dateString) return "";
+        const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (match) {
+          return `${match[3]}/${match[2]}/${match[1]}`;
+        }
+        return dateString;
+      }
+
+      function updateDateDisplay() {
+        const dateInput = document.getElementById("timelineDateInput");
+        const dateDisplay = document.getElementById("timelineDateDisplay");
+        if (!dateInput || !dateDisplay) return;
+
+        const dateValue = dateInput.value;
+        dateDisplay.value = formatDateToDDMMYYYY(dateValue);
+      }
+
+      function setTimelineDateToToday() {
+        const dateInput = document.getElementById("timelineDateInput");
+        if (!dateInput) {
+          return;
+        }
+
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, "0");
+        const day = String(today.getDate()).padStart(2, "0");
+        dateInput.value = `${year}-${month}-${day}`;
+        updateDateDisplay();
+      }
+
+      function setTimelineFormStatus(message, type = "info") {
+        if (!timelineFormStatus) {
+          return;
+        }
+
+        timelineFormStatus.textContent = message || "";
+        const statusTypes = ["info", "success", "warning", "error", "pending"];
+        statusTypes.forEach((statusType) => {
+          timelineFormStatus.classList.toggle(
+            `timeline-form__status--${statusType}`,
+            statusType === type
+          );
+        });
+      }
+
+      function setTimelinePasswordStatus(message, type = "info") {
+        if (!timelinePasswordStatus) {
+          return;
+        }
+
+        timelinePasswordStatus.textContent = message || "";
+        const statusTypes = ["info", "success", "warning", "error", "pending"];
+        statusTypes.forEach((statusType) => {
+          timelinePasswordStatus.classList.toggle(
+            `timeline-form__status--${statusType}`,
+            statusType === type
+          );
+        });
+      }
+
+      function openTimelinePasswordModal() {
+        if (!timelinePasswordModal) {
+          return;
+        }
+
+        timelinePasswordModal.hidden = false;
+        timelinePasswordModal.classList.add("timeline-password-modal--open");
+        document.body.classList.add("timeline-password-modal-open");
+        setTimelinePasswordStatus("Nhập mật khẩu để mở khóa nhé 🌟", "info");
+
+        window.requestAnimationFrame(() => {
+          timelinePasswordInput?.focus();
+        });
+      }
+
+      function closeTimelinePasswordModal(options = {}) {
+        if (!timelinePasswordModal) {
+          return;
+        }
+
+        timelinePasswordModal.classList.remove("timeline-password-modal--open");
+        timelinePasswordModal.hidden = true;
+        document.body.classList.remove("timeline-password-modal-open");
+        timelinePasswordForm?.reset();
+        setTimelinePasswordStatus("");
+
+        if (!timelineFormUnlocked && options.restoreFocus !== false) {
+          unlockHeart?.focus();
+        }
+      }
+
+      function determineMediaTypeFromUrl(url = "") {
+        const lowered = url.toLowerCase();
+        const videoExtensions = [".mp4", ".webm", ".ogg", ".mov", ".m4v"];
+        const imageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif"];
+
+        if (videoExtensions.some((ext) => lowered.endsWith(ext))) {
+          return "video";
+        }
+
+        if (imageExtensions.some((ext) => lowered.endsWith(ext))) {
+          return "image";
+        }
+
+        return "auto";
+      }
+
+      function resetTimelineMediaSelections() {
+        if (Array.isArray(timelineMediaSelections)) {
+          timelineMediaSelections.forEach((selection) => {
+            if (selection?.previewUrl) {
+              URL.revokeObjectURL(selection.previewUrl);
+            }
+          });
+        }
+
+        timelineMediaSelections = [];
+
+        if (timelineMediaPreviewList) {
+          timelineMediaPreviewList.innerHTML = "";
+        }
+
+        if (timelineMediaPreviewContainer) {
+          timelineMediaPreviewContainer.hidden = true;
+        }
+
+        if (timelineAddMoreMediaBtn) {
+          timelineAddMoreMediaBtn.hidden = true;
+        }
+      }
+
+      function autoResizeTextarea(textarea) {
+        if (!textarea) return;
+        textarea.style.height = "auto";
+        const scrollHeight = textarea.scrollHeight;
+        const minHeight = 42;
+        const maxHeight = 200;
+        textarea.style.height = `${Math.min(Math.max(scrollHeight, minHeight), maxHeight)}px`;
+        textarea.style.overflowY = scrollHeight > maxHeight ? "auto" : "hidden";
+      }
+
+      function renderTimelineMediaPreview() {
+        if (!timelineMediaPreviewList || !Array.isArray(timelineMediaSelections)) {
+          return;
+        }
+
+        timelineMediaPreviewList.innerHTML = "";
+
+        timelineMediaSelections.forEach((selection, index) => {
+          const { file, previewUrl, captionInput, type } = selection;
+          const isVideo = type === "video";
+
+          const item = document.createElement("div");
+          item.className = `timeline-media-preview__item ${
+            isVideo ? "timeline-media-preview__item--video" : "timeline-media-preview__item--image"
+          }`;
+          item.dataset.mediaIndex = String(index);
+          item.draggable = true;
+
+          const headerRow = document.createElement("div");
+          headerRow.className = "timeline-media-preview__header";
+
+          const badge = document.createElement("span");
+          badge.className = "timeline-media-preview__badge";
+          badge.textContent = index === 0 ? "Ảnh đại diện" : `Ảnh ${index + 1}`;
+
+          const controls = document.createElement("div");
+          controls.className = "timeline-media-preview__controls";
+
+          const deleteBtn = document.createElement("button");
+          deleteBtn.type = "button";
+          deleteBtn.className = "timeline-media-preview__delete-btn";
+          deleteBtn.innerHTML = "×";
+          deleteBtn.title = "Xóa ảnh này";
+          deleteBtn.setAttribute("aria-label", "Xóa ảnh này");
+          deleteBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (selection?.previewUrl) {
+              URL.revokeObjectURL(selection.previewUrl);
+            }
+            timelineMediaSelections.splice(index, 1);
+            if (timelineMediaSelections.length === 0) {
+              if (timelineMediaPreviewList) {
+                timelineMediaPreviewList.innerHTML = "";
+              }
+              if (timelineMediaPreviewContainer) {
+                timelineMediaPreviewContainer.hidden = true;
+              }
+              if (timelineAddMoreMediaBtn) {
+                timelineAddMoreMediaBtn.hidden = true;
+              }
+            } else {
+              renderTimelineMediaPreview();
+            }
+          });
+          controls.appendChild(deleteBtn);
+
+          if (index > 0) {
+            const upBtn = document.createElement("button");
+            upBtn.type = "button";
+            upBtn.className = "timeline-media-preview__move-btn";
+            upBtn.innerHTML = "↑";
+            upBtn.title = "Di chuyển lên";
+            upBtn.addEventListener("click", () => {
+              const temp = timelineMediaSelections[index];
+              timelineMediaSelections[index] = timelineMediaSelections[index - 1];
+              timelineMediaSelections[index - 1] = temp;
+              renderTimelineMediaPreview();
+            });
+            controls.appendChild(upBtn);
+          }
+
+          if (index < timelineMediaSelections.length - 1) {
+            const downBtn = document.createElement("button");
+            downBtn.type = "button";
+            downBtn.className = "timeline-media-preview__move-btn";
+            downBtn.innerHTML = "↓";
+            downBtn.title = "Di chuyển xuống";
+            downBtn.addEventListener("click", () => {
+              const temp = timelineMediaSelections[index];
+              timelineMediaSelections[index] = timelineMediaSelections[index + 1];
+              timelineMediaSelections[index + 1] = temp;
+              renderTimelineMediaPreview();
+            });
+            controls.appendChild(downBtn);
+          }
+
+          headerRow.appendChild(badge);
+          headerRow.appendChild(controls);
+          item.appendChild(headerRow);
+
+          const mediaWrapper = document.createElement(isVideo ? "video" : "img");
+          mediaWrapper.className = "timeline-media-preview__media";
+          mediaWrapper.style.cursor = "pointer";
+          mediaWrapper.title = "Click để xem chi tiết";
+          if (isVideo) {
+            mediaWrapper.src = previewUrl;
+            mediaWrapper.controls = true;
+            mediaWrapper.preload = "metadata";
+          } else {
+            mediaWrapper.src = previewUrl;
+            mediaWrapper.alt = file.name || `File ${index + 1}`;
+          }
+
+          // Add click handler to open lightbox
+          mediaWrapper.addEventListener("click", (e) => {
+            // Prevent drag events from triggering lightbox
+            if (item.classList.contains("timeline-media-preview__item--dragging")) {
+              return;
+            }
+
+            e.stopPropagation();
+            const captionValue = selection?.captionInput?.value?.trim() || "";
+            const captionText = captionValue || file.name || (index === 0 ? "Ảnh đại diện" : `Ảnh ${index + 1}`);
+
+            if (typeof openLightbox === "function") {
+              openLightbox({
+                type: isVideo ? "video" : "image",
+                src: previewUrl,
+                caption: captionText,
+                mime: file.type || "",
+              });
+            }
+          });
+
+          const meta = document.createElement("p");
+          meta.className = "timeline-media-preview__name";
+          meta.textContent = file.name || `File ${index + 1}`;
+
+          const captionLabel = document.createElement("label");
+          captionLabel.className = "timeline-media-preview__caption";
+
+          const captionTitle = document.createElement("span");
+          captionTitle.textContent = `Chú thích${index === 0 ? " (Ảnh đại diện)" : ""}`;
+
+          if (!captionInput || !captionInput.parentElement) {
+            const newCaptionInput = document.createElement("textarea");
+            newCaptionInput.maxLength = 160;
+            newCaptionInput.placeholder = "Nhập chú thích cho hình/video này";
+            newCaptionInput.className = "timeline-media-preview__caption-input";
+            newCaptionInput.rows = 1;
+            newCaptionInput.addEventListener("input", () => {
+              autoResizeTextarea(newCaptionInput);
+            });
+            selection.captionInput = newCaptionInput;
+            captionLabel.appendChild(captionTitle);
+            captionLabel.appendChild(newCaptionInput);
+            autoResizeTextarea(newCaptionInput);
+          } else {
+            if (!captionInput.hasAttribute("rows")) {
+              captionInput.setAttribute("rows", "1");
+            }
+            if (captionInput.tagName.toLowerCase() !== "textarea") {
+              const textarea = document.createElement("textarea");
+              textarea.value = captionInput.value || "";
+              textarea.maxLength = 160;
+              textarea.placeholder = "Nhập chú thích cho hình/video này";
+              textarea.className = "timeline-media-preview__caption-input";
+              textarea.rows = 1;
+              textarea.addEventListener("input", () => {
+                autoResizeTextarea(textarea);
+              });
+              selection.captionInput = textarea;
+              captionLabel.appendChild(captionTitle);
+              captionLabel.appendChild(textarea);
+              autoResizeTextarea(textarea);
+            } else {
+              captionLabel.appendChild(captionTitle);
+              captionLabel.appendChild(captionInput);
+              if (!captionInput.oninput) {
+                captionInput.addEventListener("input", () => {
+                  autoResizeTextarea(captionInput);
+                });
+              }
+              autoResizeTextarea(captionInput);
+            }
+          }
+
+          item.addEventListener("dragstart", (e) => {
+            e.dataTransfer.effectAllowed = "move";
+            e.dataTransfer.setData("text/html", item.outerHTML);
+            e.dataTransfer.setData("text/plain", String(index));
+            item.classList.add("timeline-media-preview__item--dragging");
+          });
+
+          item.addEventListener("dragend", () => {
+            item.classList.remove("timeline-media-preview__item--dragging");
+          });
+
+          item.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = "move";
+          });
+
+          item.addEventListener("drop", (e) => {
+            e.preventDefault();
+            const fromIndex = Number.parseInt(e.dataTransfer.getData("text/plain"), 10);
+            const toIndex = index;
+
+            if (fromIndex !== toIndex && !Number.isNaN(fromIndex)) {
+              const moved = timelineMediaSelections.splice(fromIndex, 1)[0];
+              timelineMediaSelections.splice(toIndex, 0, moved);
+              renderTimelineMediaPreview();
+            }
+          });
+
+          item.appendChild(mediaWrapper);
+          item.appendChild(meta);
+          item.appendChild(captionLabel);
+
+          timelineMediaPreviewList.appendChild(item);
+        });
+      }
+
+      function handleTimelineMediaSelection(event) {
+        const files = Array.from(event?.target?.files || []);
+
+        if (!files.length || !timelineMediaPreviewContainer || !timelineMediaPreviewList) {
+          return;
+        }
+
+        if (!Array.isArray(timelineMediaSelections)) {
+          timelineMediaSelections = [];
+        }
+
+        timelineMediaPreviewContainer.hidden = false;
+
+        const newSelections = files.map((file) => {
+          const previewUrl = URL.createObjectURL(file);
+          const isVideo = file.type?.toLowerCase().startsWith("video/");
+
+          const captionInput = document.createElement("textarea");
+          captionInput.maxLength = 160;
+          captionInput.placeholder = "Nhập chú thích cho hình/video này";
+          captionInput.className = "timeline-media-preview__caption-input";
+          captionInput.rows = 1;
+          captionInput.addEventListener("input", () => {
+            autoResizeTextarea(captionInput);
+          });
+
+          return {
+            file,
+            previewUrl,
+            captionInput,
+            type: isVideo ? "video" : "image",
+          };
+        });
+
+        timelineMediaSelections.push(...newSelections);
+        renderTimelineMediaPreview();
+
+        if (timelineAddMoreMediaBtn) {
+          timelineAddMoreMediaBtn.hidden = false;
+        }
+
+        if (timelineMediaFileInput) {
+          timelineMediaFileInput.value = "";
+        }
+      }
+
+      function handleAddMoreMediaClick() {
+        if (timelineMediaFileInput) {
+          timelineMediaFileInput.click();
+        }
+      }
+
+      function sanitizeStorageFileName(name = "") {
+        return name
+          .split("/")
+          .pop()
+          ?.replace(/[^a-z0-9._-]+/gi, "_")
+          ?.replace(/_+/g, "_")
+          ?.replace(/^_+|_+$/g, "")
+          ?.slice(0, 120) || "media";
+      }
+
+      async function uploadTimelineMediaFile(file, context = {}) {
+        if (!storage) {
+          throw new Error("Firebase Storage chưa sẵn sàng để tải file.");
+        }
+
+        const { title = "", caption = "" } = context;
+        const sanitizedName = sanitizeStorageFileName(file.name || "media");
+        const timestamp = Date.now();
+        const storagePath = `${STORAGE_UPLOAD_FOLDER}/${timestamp}_${sanitizedName}`;
+
+        const fileRef = storage.ref().child(storagePath);
+        const metadata = {
+          contentType: file.type || "application/octet-stream",
+        };
+
+        await fileRef.put(file, metadata);
+        const downloadURL = await fileRef.getDownloadURL();
+
+        const inferredType = file.type?.startsWith("video/") ? "video" : "image";
+
+        return {
+          src: downloadURL,
+          type: inferredType,
+          caption: caption,
+          alt: caption || title || sanitizedName,
+          mimeType: file.type || "",
+        };
+      }
+
+      function normalizeTimelineMediaItem(item = {}, fallbackTitle = "") {
+        if (!item) {
+          return null;
+        }
+
+        const src = item.src || item.url;
+        if (!src) {
+          return null;
+        }
+
+        const type = item.type || determineMediaTypeFromUrl(src);
+        return {
+          src,
+          alt: item.alt || item.caption || fallbackTitle,
+          caption: item.caption || item.alt || "",
+          type: type === "auto" ? undefined : type,
+          poster: item.poster || "",
+          mimeType: item.mimeType || item.mediaType || "",
+        };
+      }
+
+      function normalizeFirestoreTimelineEntry(doc) {
+        const raw = typeof doc?.data === "function" ? doc.data() : {};
+
+        const fallbackTitle = raw?.title || "Cột mốc yêu thương";
+        const images = Array.isArray(raw?.images)
+          ? raw.images
+              .map((item) => normalizeTimelineMediaItem(item, fallbackTitle))
+              .filter(Boolean)
+          : [];
+
+        return {
+          id: doc?.id,
+          date: raw?.date,
+          title: fallbackTitle,
+          location: raw?.location || "",
+          description: raw?.description || "",
+          images,
+        };
+      }
+
+      function subscribeToTimelineCollection() {
+        if (!firestore) {
+          return;
+        }
+
+        if (typeof timelineUnsubscribe === "function") {
+          timelineUnsubscribe();
+        }
+
+        const collectionRef = firestore
+          .collection(TIMELINE_COLLECTION)
+          .orderBy("date", "asc");
+
+        timelineUnsubscribe = collectionRef.onSnapshot(
+          (snapshot) => {
+            const entries = snapshot.docs.map((doc) => normalizeFirestoreTimelineEntry(doc));
+
+            if (entries.length > 0) {
+              renderTimeline(entries);
+            } else if (timelineFallback.length > 0) {
+              renderTimeline(timelineFallback);
+            } else {
+              renderTimeline([]);
+            }
+
+            if (timelineFormUnlocked) {
+              if (entries.length === 0) {
+                setTimelineFormStatus(
+                  "Hãy là người đầu tiên kể thêm một kỷ niệm 💌",
+                  "info"
+                );
+              } else {
+                setTimelineFormStatus("Kể thêm cột mốc mới nhé 💖", "success");
+              }
+            } else {
+              setTimelineFormStatus("");
+              setTimelinePasswordStatus("Nhập mật khẩu để mở khóa nhé 🌟", "info");
+            }
+          },
+          (error) => {
+            console.error(error);
+            setTimelineFormStatus(
+              "Không thể tải cột mốc mới từ Firebase. Đang hiển thị dữ liệu dự phòng.",
+              "warning"
+            );
+            renderTimeline(timelineFallback);
+          }
+        );
+      }
+
+      function buildTimelineEntryFromForm(formData, options = {}) {
+        const { appendedMedia = [] } = options;
+        const title = (formData.get("title") || "").trim();
+        const dateValue = (formData.get("date") || "").trim();
+        const description = (formData.get("description") || "").trim();
+        const location = (formData.get("location") || "").trim();
+
+        if (!title || !dateValue) {
+          throw new Error("Vui lòng điền đầy đủ ngày và tiêu đề cho cột mốc.");
+        }
+
+        const isoDate = dateValue;
+        const images = Array.isArray(appendedMedia)
+          ? appendedMedia
+              .filter(Boolean)
+              .map((item) => ({
+                src: item.src,
+                type: item.type,
+                caption: item.caption || "",
+                alt: item.alt || title,
+                poster: item.poster || "",
+                mimeType: item.mimeType || "",
+              }))
+          : [];
+
+        return {
+          title,
+          date: isoDate,
+          location,
+          description,
+          images,
+        };
+      }
+
+      async function handleTimelineSubmit(event) {
+        event.preventDefault();
+
+        if (!timelineForm) {
+          return;
+        }
+
+        if (!timelineFormUnlocked) {
+          setTimelinePasswordStatus("Nhập mật khẩu để mở khóa nhé 🌟", "info");
+          setTimelineFormStatus(
+            "Bạn cần mở khóa bằng mật khẩu trước khi gửi cột mốc nha 💖",
+            "warning"
+          );
+          return;
+        }
+
+        if (!firestore) {
+          setTimelineFormStatus(
+            "Chức năng thêm cột mốc đang được thiết lập. Vui lòng quay lại sau nhé!",
+            "warning"
+          );
+          return;
+        }
+
+        const formData = new FormData(timelineForm);
+        const selectedMedia = Array.isArray(timelineMediaSelections)
+          ? timelineMediaSelections.slice()
+          : [];
+        const titleValue = (formData.get("title") || "").trim();
+
+        if (selectedMedia.length && !storage) {
+          setTimelineFormStatus(
+            "Không thể tải file vì Firebase Storage chưa được cấu hình.",
+            "error"
+          );
+          return;
+        }
+
+        const oversizedSelection = selectedMedia.find(
+          (selection) => selection?.file?.size > MAX_UPLOAD_SIZE_BYTES
+        );
+
+        if (oversizedSelection) {
+          const fileSizeMb = (
+            oversizedSelection.file.size /
+            (1024 * 1024)
+          ).toFixed(1);
+          const maxSizeMb = (MAX_UPLOAD_SIZE_BYTES / (1024 * 1024)).toFixed(0);
+          setTimelineFormStatus(
+            `File ${oversizedSelection.file.name || ""} quá lớn (${fileSizeMb}MB). Vui lòng chọn file nhỏ hơn ${maxSizeMb}MB.`,
+            "error"
+          );
+          return;
+        }
+
+        try {
+          setTimelineFormSubmitting(true);
+          let appendedMedia = [];
+
+          if (selectedMedia.length) {
+            for (let index = 0; index < selectedMedia.length; index += 1) {
+              const selection = selectedMedia[index];
+              const captionValue = selection?.captionInput?.value?.trim() || "";
+
+              setTimelineFormStatus(
+                selectedMedia.length === 1
+                  ? "Đang tải file lên bộ nhớ yêu thương..."
+                  : `Đang tải file ${index + 1}/${selectedMedia.length} vào bộ nhớ yêu thương...`,
+                "pending"
+              );
+
+              const uploadedMedia = await uploadTimelineMediaFile(selection.file, {
+                title: titleValue,
+                caption: captionValue,
+              });
+
+              appendedMedia.push({
+                ...uploadedMedia,
+                caption: captionValue || uploadedMedia.caption,
+                alt: captionValue || uploadedMedia.alt,
+              });
+            }
+          }
+
+          const entry = buildTimelineEntryFromForm(formData, { appendedMedia });
+          setTimelineFormStatus("Đang gửi cột mốc nhỏ xinh của bạn...", "pending");
+          await firestore.collection(TIMELINE_COLLECTION).add({
+            ...entry,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          });
+
+          timelineForm.reset();
+          if (timelineMediaFileInput) {
+            timelineMediaFileInput.value = "";
+          }
+          resetTimelineMediaSelections();
+          setTimelineFormStatus("Đã gửi thành công! Yêu thương đã được lưu lại 💕", "success");
+        } catch (error) {
+          console.error(error);
+          setTimelineFormStatus(
+            `Gửi cột mốc chưa thành công: ${error?.message || String(error)}`,
+            "error"
+          );
+        } finally {
+          setTimelineFormSubmitting(false);
+        }
+      }
+
+      function handleTimelinePasswordSubmit(event) {
+        event.preventDefault();
+
+        if (!timelinePasswordInput) {
+          return;
+        }
+
+        const submittedPassword = timelinePasswordInput.value.trim();
+
+        if (submittedPassword !== TIMELINE_FORM_PASSWORD) {
+          setTimelinePasswordStatus("Sai mật khẩu rồi, thử lại nhé 💔", "error");
+          timelinePasswordInput.value = "";
+          timelinePasswordInput.focus();
+          return;
+        }
+
+        timelineFormUnlocked = true;
+        setTimelineSubmitSectionVisibility(true);
+        timelinePasswordInput.value = "";
+
+        if (timelineForm) {
+          timelineForm.hidden = false;
+          setTimelineDateToToday();
+        }
+
+        if (isFirebaseReady) {
+          setTimelineFormEnabled(true);
+          setTimelineFormStatus("Kể thêm cột mốc mới nhé 💖", "success");
+        } else {
+          setTimelineFormEnabled(false);
+          setTimelineFormStatus("Đang kết nối Firebase, vui lòng chờ nhé...", "pending");
+        }
+
+        closeTimelinePasswordModal({ restoreFocus: false });
+        unlockHeart?.classList.add("heart--unlocked");
+        timelineSubmitSection?.scrollIntoView({ behavior: "smooth", block: "center" });
+
+        // Focus vào date field sau khi modal đóng và form hiển thị
+        setTimeout(() => {
+          focusTimelineFirstField();
+        }, 300);
+      }
+
+      function handleHeartActivation(event) {
+        if (
+          event.type === "keydown" &&
+          event.key !== "Enter" &&
+          event.key !== " " &&
+          event.key !== "Spacebar"
+        ) {
+          return;
+        }
+
+        event.preventDefault();
+
+        if (!timelineFormUnlocked) {
+          openTimelinePasswordModal();
+          return;
+        }
+
+        setTimelineSubmitSectionVisibility(true);
+        if (timelineForm) {
+          timelineForm.hidden = false;
+          setTimelineDateToToday();
+        }
+
+        timelineSubmitSection?.scrollIntoView({ behavior: "smooth", block: "center" });
+        
+        // Focus vào date field sau khi scroll
+        setTimeout(() => {
+          focusTimelineFirstField();
+        }, 300);
+      }
+
+      function initFirebaseTimeline() {
+        if (!timelineSubmitSection) {
+          return;
+        }
+
+        setTimelineSubmitSectionVisibility(timelineFormUnlocked);
+
+        if (!window.firebase) {
+          setTimelineFormEnabled(false);
+          setTimelineFormStatus(
+            "Không thể tải Firebase SDK. Vui lòng tải lại trang để thử lại nhé!",
+            "error"
+          );
+          if (timelinePasswordForm) {
+            timelinePasswordForm.hidden = false;
+          }
+          return;
+        }
+
+        if (!window.FIREBASE_CONFIG) {
+          setTimelineFormEnabled(false);
+          setTimelineFormStatus(
+            "Chức năng thêm cột mốc sẽ hoạt động sau khi cấu hình Firebase.",
+            "warning"
+          );
+          if (timelinePasswordForm) {
+            timelinePasswordForm.hidden = false;
+          }
+          return;
+        }
+
+        try {
+          if (!firebase.apps.length) {
+            firebase.initializeApp(window.FIREBASE_CONFIG);
+          }
+          firestore = firebase.firestore();
+          if (typeof firebase.storage === "function") {
+            storage = firebase.storage();
+          } else {
+            storage = null;
+            console.warn("Firebase Storage SDK chưa được tải.");
+          }
+          isFirebaseReady = true;
+          if (timelineFormUnlocked) {
+            setTimelineFormEnabled(true);
+            setTimelineFormStatus("Kể thêm cột mốc mới nhé 💖", "success");
+          } else {
+            setTimelineFormEnabled(false);
+            setTimelineFormStatus("Nhập mật khẩu để mở khóa nhé 🌟", "info");
+            if (timelinePasswordForm) {
+              timelinePasswordForm.hidden = false;
+            }
+            setTimelinePasswordStatus("Nhập mật khẩu để mở khóa nhé 🌟", "info");
+          }
+          subscribeToTimelineCollection();
+        } catch (error) {
+          console.error(error);
+          setTimelineFormEnabled(false);
+          setTimelineFormStatus(
+            "Không thể khởi tạo Firebase. Vui lòng kiểm tra lại cấu hình.",
+            "error"
+          );
+          if (timelinePasswordForm) {
+            timelinePasswordForm.hidden = false;
+          }
+        }
       }
 
       function openLightbox({ type, src, poster, caption, mime }) {
@@ -697,6 +1880,10 @@
 
       document.addEventListener("keydown", (event) => {
         if (event.key === "Escape") {
+          if (timelinePasswordModal && !timelinePasswordModal.hidden) {
+            closeTimelinePasswordModal();
+            return;
+          }
           closeLightbox();
         }
       });
@@ -800,8 +1987,25 @@
         }
       }
 
+      const unlockHeart = document.getElementById("unlockHeart");
       const timelineToggle = document.getElementById("timelineToggle");
       const timelineSection = document.getElementById("timelineSection");
+      const timelineSubmitSection = document.getElementById("timelineSubmitSection");
+      const timelinePasswordModal = document.getElementById("timelinePasswordModal");
+      const timelinePasswordForm = document.getElementById("timelinePasswordForm");
+      const timelinePasswordInput = document.getElementById("timelinePasswordInput");
+      const timelinePasswordToggle = document.getElementById("timelinePasswordToggle");
+      const timelinePasswordStatus = document.getElementById("timelinePasswordStatus");
+      const timelineDateInput = document.getElementById("timelineDateInput");
+      const timelineDateDisplay = document.getElementById("timelineDateDisplay");
+      const timelineDateIconBtn = document.getElementById("timelineDateIconBtn");
+      const timelineMediaFileInput = document.getElementById("timelineMediaFile");
+      const timelineAddMoreMediaBtn = document.getElementById("timelineAddMoreMediaBtn");
+      const timelineMediaPreviewContainer = document.getElementById("timelineMediaPreviewContainer");
+      const timelineMediaPreviewList = document.getElementById("timelineMediaPreviewList");
+      const timelineForm = document.getElementById("timelineForm");
+      const timelineSubmitButton = document.getElementById("timelineSubmitButton");
+      const timelineFormStatus = document.getElementById("timelineFormStatus");
 
       if (timelineToggle && timelineSection) {
         timelineToggle.addEventListener("click", () => {
@@ -813,9 +2017,113 @@
         });
       }
 
+      if (unlockHeart) {
+        unlockHeart.addEventListener("click", handleHeartActivation);
+        unlockHeart.addEventListener("keydown", handleHeartActivation);
+      }
+
+      if (timelinePasswordModal) {
+        timelinePasswordModal.addEventListener("click", (event) => {
+          const target = event.target;
+          if (target && "passwordModalClose" in target.dataset) {
+            closeTimelinePasswordModal();
+          }
+        });
+      }
+
+      function togglePasswordVisibility() {
+        if (!timelinePasswordInput || !timelinePasswordToggle) return;
+
+        const isPassword = timelinePasswordInput.type === "password";
+        timelinePasswordInput.type = isPassword ? "text" : "password";
+
+        const hiddenIcon = timelinePasswordToggle.querySelector(
+          ".timeline-form__password-icon--hidden"
+        );
+        const visibleIcon = timelinePasswordToggle.querySelector(
+          ".timeline-form__password-icon--visible"
+        );
+
+        if (hiddenIcon && visibleIcon) {
+          if (isPassword) {
+            hiddenIcon.style.display = "none";
+            visibleIcon.style.display = "block";
+            timelinePasswordToggle.setAttribute("aria-pressed", "true");
+            timelinePasswordToggle.setAttribute("aria-label", "Ẩn mật khẩu");
+          } else {
+            hiddenIcon.style.display = "block";
+            visibleIcon.style.display = "none";
+            timelinePasswordToggle.setAttribute("aria-pressed", "false");
+            timelinePasswordToggle.setAttribute("aria-label", "Hiện mật khẩu");
+          }
+        }
+      }
+
+      if (timelinePasswordToggle && timelinePasswordInput) {
+        timelinePasswordToggle.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          togglePasswordVisibility();
+        });
+      }
+
+      if (timelinePasswordForm) {
+        timelinePasswordForm.addEventListener("submit", handleTimelinePasswordSubmit);
+      }
+
+      if (timelineMediaFileInput) {
+        timelineMediaFileInput.addEventListener("change", handleTimelineMediaSelection);
+      }
+
+      if (timelineAddMoreMediaBtn) {
+        timelineAddMoreMediaBtn.addEventListener("click", handleAddMoreMediaClick);
+      }
+
+      function openDatePicker() {
+        if (timelineDateInput) {
+          timelineDateInput.showPicker?.();
+          timelineDateInput.focus();
+          timelineDateInput.click();
+        }
+      }
+
+      if (timelineDateInput) {
+        timelineDateInput.addEventListener("change", updateDateDisplay);
+        timelineDateInput.addEventListener("input", updateDateDisplay);
+      }
+
+      if (timelineDateDisplay) {
+        timelineDateDisplay.addEventListener("click", openDatePicker);
+        // Remove auto-open on focus, only open on explicit click
+      }
+
+      if (timelineDateIconBtn && timelineDateInput) {
+        timelineDateIconBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          openDatePicker();
+        });
+      }
+
+      if (timelineForm) {
+        timelineForm.addEventListener("submit", handleTimelineSubmit);
+      }
+
       setupLightboxInfrastructure();
       setupTimeSlider();
       initStory();
+      initFirebaseTimeline();
+
+      // Sync date display on page load if date input has value
+      if (timelineDateInput && timelineDateDisplay && timelineDateInput.value) {
+        updateDateDisplay();
+      }
+
+      window.addEventListener("unload", () => {
+        if (typeof timelineUnsubscribe === "function") {
+          timelineUnsubscribe();
+        }
+      });
     </script>
   </body>
 </html>

@@ -16,42 +16,6 @@
       "avatar": "assets/diemquynh.jpg",
       "zodiac": "Bọ Cạp"
     }
-  },
-  "timeline": [
-    {
-        "date": "2025-10-22",
-        "title": "Buổi hẹn đầu",
-        "location": "Dạo và xem phim",
-        "description": "Ẻm bảo tìm cổng đen là trọ ẻm 🤡, quằng xí thì gặp nhau rồi đi xem phim.Coi bộ ngày đầu hơi nhút nhát",
-        "images": [
-          {
-            "src": "assets/quanchodoi.jpg",
-            "alt": "Đợi ẻm"
-          },
-          {
-            "type": "video",
-            "src": "assets/video/video.mp4",
-            "caption": "Lạc đường nha má"
-          }
-        ]
-      },
-    {
-      "date": "2025-10-25",
-      "title": "Tỏ tình",
-      "location": "Công viên sáng tạo",
-      "description": "Ảnh tặng hoa và ngỏ lời thế là ẻm đồng ý thành người yêu. Trấn động đến mức ông trời hôm đó khóc luôn :> mưa to voãi.",
-      "images": [
-        {
-          "src": "assets/quantanghoa.jpg",
-          "alt": "Hoa tặng ẻm"
-        },
-        {
-            "src": "assets/hoa.jpg",
-            "alt": "Sáng anh chuẩn bị hoa sợ bị héo nên cho vào tủ lạnh ^^"
-          }
-      ]
-    }
-
-  ]
+  }
 }
 
