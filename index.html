@@ -325,6 +325,66 @@
       </div>
     </div>
 
+    <div class="timeline-add-image-modal" id="timelineAddImageModal" hidden>
+      <div class="timeline-add-image-modal__backdrop" data-add-image-modal-close></div>
+      <div
+        class="timeline-add-image-modal__dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="timelineAddImageTitle"
+      >
+        <button
+          type="button"
+          class="timeline-add-image-modal__close"
+          data-add-image-modal-close
+          aria-label="Đóng"
+        >
+          ×
+        </button>
+        <h2 class="timeline-add-image-modal__title" id="timelineAddImageTitle">
+          Thêm ảnh vào cột mốc
+        </h2>
+        <p class="timeline-add-image-modal__hint">
+          Chọn ảnh hoặc video để thêm vào cột mốc này nhé!
+        </p>
+        <form class="timeline-add-image-form" id="timelineAddImageForm" novalidate>
+          <label class="timeline-form__field timeline-form__field--full">
+            <span>Chọn hình hoặc video từ thiết bị</span>
+            <div class="timeline-form__file-input-wrapper">
+              <input
+                type="file"
+                name="addImageFile"
+                id="timelineAddImageFile"
+                accept="image/*,video/*"
+                multiple
+              />
+              <button
+                type="button"
+                class="timeline-form__add-more-btn"
+                id="timelineAddImageMoreBtn"
+                hidden
+              >
+                + Thêm ảnh/video
+              </button>
+            </div>
+            <small class="timeline-form__hint">
+              Bạn có thể chọn nhiều file cùng lúc.
+            </small>
+          </label>
+          <div class="timeline-media-preview" id="timelineAddImagePreviewContainer" hidden>
+            <p class="timeline-media-preview__hint">
+              Điền chú thích cho từng ảnh nhé 💌
+            </p>
+            <div class="timeline-media-preview__list" id="timelineAddImagePreviewList"></div>
+          </div>
+          <button class="timeline-form__submit" id="timelineAddImageSubmitButton" type="submit">
+            Thêm ảnh
+          </button>
+          <p class="timeline-form__status" id="timelineAddImageStatus" role="status" aria-live="polite"></p>
+        </form>
+      </div>
+    </div>
+
     <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-storage-compat.js"></script>
@@ -363,6 +423,8 @@
       let isFirebaseReady = false;
       let timelineFormUnlocked = false;
       let timelineMediaSelections = [];
+      let timelineAddImageSelections = [];
+      let currentTimelineEntryId = null;
 
       const LIGHTBOX_TRIGGER_SELECTOR = "[data-media-trigger]";
       let lightboxElement;
@@ -798,7 +860,7 @@
       }
 
       function createTimelineCard(entry = {}) {
-        const { date, title = "", description = "", location = "", images } = entry;
+        const { id, date, title = "", description = "", location = "", images } = entry;
         const formattedDate = formatDate(date);
         const { main, gallery } = createTimelineGallery(images, title);
         const hasMainImage = Boolean(main);
@@ -808,9 +870,20 @@
         const safeDescription = description
           ? escapeHtml(description).replace(/\n/g, "<br />")
           : "";
+        const safeId = id ? escapeAttribute(id) : "";
+
+        const addImageButton = timelineFormUnlocked && id
+          ? `<button type="button" class="timeline-card__add-image-btn" data-timeline-id="${safeId}" aria-label="Thêm ảnh vào cột mốc này">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span>Thêm ảnh</span>
+            </button>`
+          : "";
 
         return `
-          <article class="${cardClass}">
+          <article class="${cardClass}" data-timeline-entry-id="${safeId}">
             ${main}
             <div class="timeline-card__body">
               ${
@@ -830,6 +903,7 @@
                   : ""
               }
               ${gallery}
+              ${addImageButton}
             </div>
           </article>
         `;
@@ -849,6 +923,7 @@
         const orderedEntries = sortTimelineEntries(entries);
         grid.innerHTML = orderedEntries.map(createTimelineCard).join("");
         attachLightboxHandlers();
+        attachAddImageHandlers();
       }
 
       function setTimelineSubmitSectionVisibility(isVisible) {
@@ -1636,6 +1711,26 @@
 
         closeTimelinePasswordModal({ restoreFocus: false });
         unlockHeart?.classList.add("heart--unlocked");
+        
+        // Re-render timeline để hiển thị nút "Thêm ảnh" sau khi unlock
+        setTimeout(() => {
+          const grid = document.getElementById("timelineGrid");
+          if (grid) {
+            const existingCards = grid.querySelectorAll("article");
+            if (existingCards.length > 0) {
+              // Lấy lại entries hiện tại và re-render
+              if (firestore) {
+                // Timeline sẽ tự động re-render qua onSnapshot listener
+                // Nhưng để đảm bảo, trigger một lần nữa
+                subscribeToTimelineCollection();
+              } else if (timelineFallback.length > 0) {
+                // Fallback: re-render với fallback data
+                renderTimeline(timelineFallback);
+              }
+            }
+          }
+        }, 100);
+        
         timelineSubmitSection?.scrollIntoView({ behavior: "smooth", block: "center" });
 
         // Focus vào date field sau khi modal đóng và form hiển thị
@@ -1854,6 +1949,386 @@
         });
       }
 
+      function resetTimelineAddImageSelections() {
+        if (Array.isArray(timelineAddImageSelections)) {
+          timelineAddImageSelections.forEach((selection) => {
+            if (selection?.previewUrl) {
+              URL.revokeObjectURL(selection.previewUrl);
+            }
+          });
+        }
+
+        timelineAddImageSelections = [];
+
+        const previewList = document.getElementById("timelineAddImagePreviewList");
+        if (previewList) {
+          previewList.innerHTML = "";
+        }
+
+        const previewContainer = document.getElementById("timelineAddImagePreviewContainer");
+        if (previewContainer) {
+          previewContainer.hidden = true;
+        }
+
+        const addMoreBtn = document.getElementById("timelineAddImageMoreBtn");
+        if (addMoreBtn) {
+          addMoreBtn.hidden = true;
+        }
+      }
+
+      function renderTimelineAddImagePreview() {
+        const previewList = document.getElementById("timelineAddImagePreviewList");
+        if (!previewList || !Array.isArray(timelineAddImageSelections)) {
+          return;
+        }
+
+        previewList.innerHTML = "";
+
+        timelineAddImageSelections.forEach((selection, index) => {
+          const { file, previewUrl, captionInput, type } = selection;
+          const isVideo = type === "video";
+
+          const item = document.createElement("div");
+          item.className = `timeline-media-preview__item ${
+            isVideo ? "timeline-media-preview__item--video" : "timeline-media-preview__item--image"
+          }`;
+          item.dataset.mediaIndex = String(index);
+
+          const headerRow = document.createElement("div");
+          headerRow.className = "timeline-media-preview__header";
+
+          const badge = document.createElement("span");
+          badge.className = "timeline-media-preview__badge";
+          badge.textContent = `Ảnh ${index + 1}`;
+
+          const controls = document.createElement("div");
+          controls.className = "timeline-media-preview__controls";
+
+          const deleteBtn = document.createElement("button");
+          deleteBtn.type = "button";
+          deleteBtn.className = "timeline-media-preview__delete-btn";
+          deleteBtn.innerHTML = "×";
+          deleteBtn.title = "Xóa ảnh này";
+          deleteBtn.setAttribute("aria-label", "Xóa ảnh này");
+          deleteBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (selection?.previewUrl) {
+              URL.revokeObjectURL(selection.previewUrl);
+            }
+            timelineAddImageSelections.splice(index, 1);
+            if (timelineAddImageSelections.length === 0) {
+              resetTimelineAddImageSelections();
+            } else {
+              renderTimelineAddImagePreview();
+            }
+          });
+          controls.appendChild(deleteBtn);
+          headerRow.appendChild(badge);
+          headerRow.appendChild(controls);
+          item.appendChild(headerRow);
+
+          const mediaWrapper = document.createElement(isVideo ? "video" : "img");
+          mediaWrapper.className = "timeline-media-preview__media";
+          if (isVideo) {
+            mediaWrapper.src = previewUrl;
+            mediaWrapper.controls = true;
+            mediaWrapper.preload = "metadata";
+          } else {
+            mediaWrapper.src = previewUrl;
+            mediaWrapper.alt = file.name || `File ${index + 1}`;
+          }
+
+          const meta = document.createElement("p");
+          meta.className = "timeline-media-preview__name";
+          meta.textContent = file.name || `File ${index + 1}`;
+
+          const captionLabel = document.createElement("label");
+          captionLabel.className = "timeline-media-preview__caption";
+
+          const captionTitle = document.createElement("span");
+          captionTitle.textContent = "Chú thích";
+
+          if (!captionInput || !captionInput.parentElement) {
+            const newCaptionInput = document.createElement("textarea");
+            newCaptionInput.maxLength = 160;
+            newCaptionInput.placeholder = "Nhập chú thích cho hình/video này";
+            newCaptionInput.className = "timeline-media-preview__caption-input";
+            newCaptionInput.rows = 1;
+            newCaptionInput.addEventListener("input", () => {
+              autoResizeTextarea(newCaptionInput);
+            });
+            selection.captionInput = newCaptionInput;
+            captionLabel.appendChild(captionTitle);
+            captionLabel.appendChild(newCaptionInput);
+            autoResizeTextarea(newCaptionInput);
+          } else {
+            captionLabel.appendChild(captionTitle);
+            captionLabel.appendChild(captionInput);
+            autoResizeTextarea(captionInput);
+          }
+
+          item.appendChild(mediaWrapper);
+          item.appendChild(meta);
+          item.appendChild(captionLabel);
+
+          previewList.appendChild(item);
+        });
+      }
+
+      function handleTimelineAddImageSelection(event) {
+        const files = Array.from(event?.target?.files || []);
+        const previewContainer = document.getElementById("timelineAddImagePreviewContainer");
+        const previewList = document.getElementById("timelineAddImagePreviewList");
+
+        if (!files.length || !previewContainer || !previewList) {
+          return;
+        }
+
+        if (!Array.isArray(timelineAddImageSelections)) {
+          timelineAddImageSelections = [];
+        }
+
+        previewContainer.hidden = false;
+
+        const newSelections = files.map((file) => {
+          const previewUrl = URL.createObjectURL(file);
+          const isVideo = file.type?.toLowerCase().startsWith("video/");
+
+          const captionInput = document.createElement("textarea");
+          captionInput.maxLength = 160;
+          captionInput.placeholder = "Nhập chú thích cho hình/video này";
+          captionInput.className = "timeline-media-preview__caption-input";
+          captionInput.rows = 1;
+          captionInput.addEventListener("input", () => {
+            autoResizeTextarea(captionInput);
+          });
+
+          return {
+            file,
+            previewUrl,
+            captionInput,
+            type: isVideo ? "video" : "image",
+          };
+        });
+
+        timelineAddImageSelections.push(...newSelections);
+        renderTimelineAddImagePreview();
+
+        const addMoreBtn = document.getElementById("timelineAddImageMoreBtn");
+        if (addMoreBtn) {
+          addMoreBtn.hidden = false;
+        }
+
+        const fileInput = document.getElementById("timelineAddImageFile");
+        if (fileInput) {
+          fileInput.value = "";
+        }
+      }
+
+      function handleAddMoreImageClick() {
+        const fileInput = document.getElementById("timelineAddImageFile");
+        if (fileInput) {
+          fileInput.click();
+        }
+      }
+
+      function openTimelineAddImageModal(timelineId) {
+        const modal = document.getElementById("timelineAddImageModal");
+        if (!modal) {
+          return;
+        }
+
+        currentTimelineEntryId = timelineId;
+        modal.hidden = false;
+        modal.classList.add("timeline-add-image-modal--open");
+        document.body.classList.add("timeline-add-image-modal-open");
+
+        const status = document.getElementById("timelineAddImageStatus");
+        if (status) {
+          status.textContent = "";
+        }
+
+        resetTimelineAddImageSelections();
+
+        const fileInput = document.getElementById("timelineAddImageFile");
+        if (fileInput) {
+          fileInput.value = "";
+        }
+      }
+
+      function closeTimelineAddImageModal() {
+        const modal = document.getElementById("timelineAddImageModal");
+        if (!modal) {
+          return;
+        }
+
+        modal.classList.remove("timeline-add-image-modal--open");
+        modal.hidden = true;
+        document.body.classList.remove("timeline-add-image-modal-open");
+
+        resetTimelineAddImageSelections();
+        currentTimelineEntryId = null;
+
+        const form = document.getElementById("timelineAddImageForm");
+        if (form) {
+          form.reset();
+        }
+
+        const status = document.getElementById("timelineAddImageStatus");
+        if (status) {
+          status.textContent = "";
+        }
+      }
+
+      async function handleTimelineAddImageSubmit(event) {
+        event.preventDefault();
+
+        if (!currentTimelineEntryId || !firestore) {
+          const status = document.getElementById("timelineAddImageStatus");
+          if (status) {
+            status.textContent = "Không thể thêm ảnh. Vui lòng thử lại sau.";
+            status.className = "timeline-form__status timeline-form__status--error";
+          }
+          return;
+        }
+
+        const selectedMedia = Array.isArray(timelineAddImageSelections)
+          ? timelineAddImageSelections.slice()
+          : [];
+
+        if (selectedMedia.length === 0) {
+          const status = document.getElementById("timelineAddImageStatus");
+          if (status) {
+            status.textContent = "Vui lòng chọn ít nhất một ảnh hoặc video.";
+            status.className = "timeline-form__status timeline-form__status--warning";
+          }
+          return;
+        }
+
+        if (!storage) {
+          const status = document.getElementById("timelineAddImageStatus");
+          if (status) {
+            status.textContent = "Không thể tải file vì Firebase Storage chưa được cấu hình.";
+            status.className = "timeline-form__status timeline-form__status--error";
+          }
+          return;
+        }
+
+        const oversizedSelection = selectedMedia.find(
+          (selection) => selection?.file?.size > MAX_UPLOAD_SIZE_BYTES
+        );
+
+        if (oversizedSelection) {
+          const fileSizeMb = (
+            oversizedSelection.file.size /
+            (1024 * 1024)
+          ).toFixed(1);
+          const maxSizeMb = (MAX_UPLOAD_SIZE_BYTES / (1024 * 1024)).toFixed(0);
+          const status = document.getElementById("timelineAddImageStatus");
+          if (status) {
+            status.textContent = `File ${oversizedSelection.file.name || ""} quá lớn (${fileSizeMb}MB). Vui lòng chọn file nhỏ hơn ${maxSizeMb}MB.`;
+            status.className = "timeline-form__status timeline-form__status--error";
+          }
+          return;
+        }
+
+        const status = document.getElementById("timelineAddImageStatus");
+        const submitButton = document.getElementById("timelineAddImageSubmitButton");
+
+        try {
+          if (submitButton) {
+            submitButton.disabled = true;
+          }
+
+          let newMediaItems = [];
+
+          for (let index = 0; index < selectedMedia.length; index += 1) {
+            const selection = selectedMedia[index];
+            const captionValue = selection?.captionInput?.value?.trim() || "";
+
+            if (status) {
+              status.textContent = selectedMedia.length === 1
+                ? "Đang tải file lên..."
+                : `Đang tải file ${index + 1}/${selectedMedia.length}...`;
+              status.className = "timeline-form__status timeline-form__status--pending";
+            }
+
+            const uploadedMedia = await uploadTimelineMediaFile(selection.file, {
+              title: "",
+              caption: captionValue,
+            });
+
+            newMediaItems.push({
+              src: uploadedMedia.src,
+              type: uploadedMedia.type,
+              caption: captionValue || uploadedMedia.caption,
+              alt: captionValue || uploadedMedia.alt,
+              poster: uploadedMedia.poster || "",
+              mimeType: uploadedMedia.mimeType || "",
+            });
+          }
+
+          const entryRef = firestore.collection(TIMELINE_COLLECTION).doc(currentTimelineEntryId);
+          const entryDoc = await entryRef.get();
+
+          if (!entryDoc.exists) {
+            throw new Error("Không tìm thấy cột mốc này.");
+          }
+
+          const existingData = entryDoc.data();
+          const existingImages = Array.isArray(existingData?.images) ? existingData.images : [];
+
+          if (status) {
+            status.textContent = "Đang cập nhật cột mốc...";
+            status.className = "timeline-form__status timeline-form__status--pending";
+          }
+
+          await entryRef.update({
+            images: [...existingImages, ...newMediaItems],
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          });
+
+          if (status) {
+            status.textContent = "Đã thêm ảnh thành công! 💕";
+            status.className = "timeline-form__status timeline-form__status--success";
+          }
+
+          setTimeout(() => {
+            closeTimelineAddImageModal();
+          }, 1500);
+        } catch (error) {
+          console.error(error);
+          if (status) {
+            status.textContent = `Không thể thêm ảnh: ${error?.message || String(error)}`;
+            status.className = "timeline-form__status timeline-form__status--error";
+          }
+        } finally {
+          if (submitButton) {
+            submitButton.disabled = false;
+          }
+        }
+      }
+
+      function attachAddImageHandlers() {
+        const addImageButtons = document.querySelectorAll(".timeline-card__add-image-btn[data-timeline-id]");
+        addImageButtons.forEach((button) => {
+          if (button.dataset.addImageBound === "true") {
+            return;
+          }
+
+          button.dataset.addImageBound = "true";
+          button.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const timelineId = button.dataset.timelineId;
+            if (timelineId) {
+              openTimelineAddImageModal(timelineId);
+            }
+          });
+        });
+      }
+
       function setupLightboxInfrastructure() {
         lightboxElement = document.getElementById("lightbox");
         lightboxMediaContainer = document.getElementById("lightboxMedia");
@@ -1882,6 +2357,11 @@
         if (event.key === "Escape") {
           if (timelinePasswordModal && !timelinePasswordModal.hidden) {
             closeTimelinePasswordModal();
+            return;
+          }
+          const addImageModal = document.getElementById("timelineAddImageModal");
+          if (addImageModal && !addImageModal.hidden) {
+            closeTimelineAddImageModal();
             return;
           }
           closeLightbox();
@@ -2107,6 +2587,32 @@
 
       if (timelineForm) {
         timelineForm.addEventListener("submit", handleTimelineSubmit);
+      }
+
+      const timelineAddImageModal = document.getElementById("timelineAddImageModal");
+      const timelineAddImageForm = document.getElementById("timelineAddImageForm");
+      const timelineAddImageFile = document.getElementById("timelineAddImageFile");
+      const timelineAddImageMoreBtn = document.getElementById("timelineAddImageMoreBtn");
+
+      if (timelineAddImageModal) {
+        timelineAddImageModal.addEventListener("click", (event) => {
+          const target = event.target;
+          if (target && "addImageModalClose" in target.dataset) {
+            closeTimelineAddImageModal();
+          }
+        });
+      }
+
+      if (timelineAddImageFile) {
+        timelineAddImageFile.addEventListener("change", handleTimelineAddImageSelection);
+      }
+
+      if (timelineAddImageMoreBtn) {
+        timelineAddImageMoreBtn.addEventListener("click", handleAddMoreImageClick);
+      }
+
+      if (timelineAddImageForm) {
+        timelineAddImageForm.addEventListener("submit", handleTimelineAddImageSubmit);
       }
 
       setupLightboxInfrastructure();

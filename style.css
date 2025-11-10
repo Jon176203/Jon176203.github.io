@@ -1627,6 +1627,124 @@ body.timeline-password-modal-open {
   outline: none;
 }
 
+.timeline-card__add-image-btn {
+  margin-top: 16px;
+  padding: 10px 20px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 112, 166, 0.4);
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  width: auto;
+  visibility: visible;
+  opacity: 1;
+}
+
+.timeline-card__add-image-btn:hover,
+.timeline-card__add-image-btn:focus-visible {
+  background: rgba(255, 255, 255, 1);
+  border-color: rgba(255, 112, 166, 0.6);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.timeline-card__add-image-btn:active {
+  transform: translateY(0);
+}
+
+.timeline-card__add-image-btn svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2.5;
+}
+
+.timeline-add-image-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(24px, 6vw, 48px);
+  background: rgba(34, 7, 36, 0.55);
+  backdrop-filter: blur(6px);
+  z-index: 950;
+}
+
+.timeline-add-image-modal[hidden] {
+  display: none;
+}
+
+.timeline-add-image-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  cursor: pointer;
+}
+
+.timeline-add-image-modal__dialog {
+  position: relative;
+  z-index: 1;
+  width: min(90vw, 600px);
+  max-height: 90vh;
+  overflow-y: auto;
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 28px;
+  padding: clamp(24px, 6vw, 32px);
+  box-shadow: 0 24px 50px rgba(255, 71, 126, 0.28);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  text-align: left;
+}
+
+.timeline-add-image-modal__title {
+  margin: 0;
+  font-size: clamp(20px, 4.5vw, 24px);
+  color: var(--text-color);
+}
+
+.timeline-add-image-modal__hint {
+  margin: 0;
+  font-size: 15px;
+  color: rgba(74, 21, 75, 0.72);
+}
+
+.timeline-add-image-modal__close {
+  position: absolute;
+  top: 16px;
+  right: 18px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 112, 166, 0.9);
+  color: #fff;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 14px 28px rgba(255, 112, 166, 0.22);
+}
+
+.timeline-add-image-modal__close:hover,
+.timeline-add-image-modal__close:focus-visible {
+  background: rgba(255, 71, 126, 0.95);
+  outline: none;
+}
+
+body.timeline-add-image-modal-open {
+  overflow: hidden;
+}
+
 @media (max-width: 420px) {
   .love-card {
     padding: 36px 24px;
