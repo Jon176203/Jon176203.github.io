@@ -58,7 +58,7 @@
               placeholder="Ví dụ: Đi xem phim cùng nhau"
             />
           </label>
-          <button class="todo-form__submit" id="todoSubmitButton" type="submit">
+          <button class="todo-form__submit button-with-feedback" id="todoSubmitButton" type="submit">
             Ấn đây để thêm nha bae :3
           </button>
           <p class="todo-form__status" id="todoFormStatus" role="status" aria-live="polite"></p>
@@ -114,6 +114,41 @@
       </div>
     </div>
 
+    <!-- Modal xác nhận bỏ tick -->
+    <div class="todo-uncomplete-modal" id="todoUncompleteModal" hidden>
+      <div class="todo-uncomplete-modal__backdrop" data-uncomplete-modal-close></div>
+      <div class="todo-uncomplete-modal__dialog">
+        <button
+          type="button"
+          class="todo-uncomplete-modal__close"
+          data-uncomplete-modal-close
+          aria-label="Đóng"
+        >
+          ×
+        </button>
+        <h2 class="todo-uncomplete-modal__title">Xác nhận</h2>
+        <p class="todo-uncomplete-modal__hint">
+          Em có chắc là bỏ tick này hong?
+        </p>
+        <div class="todo-uncomplete-modal__buttons">
+          <button
+            type="button"
+            class="todo-uncomplete-modal__cancel"
+            data-uncomplete-modal-close
+          >
+            Hủy
+          </button>
+          <button
+            type="button"
+            class="todo-uncomplete-modal__submit button-with-feedback"
+            id="uncompleteSubmitButton"
+          >
+            Xác nhận
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Modal chọn ngày giờ hoàn thành -->
     <div class="todo-completion-modal" id="todoCompletionModal" hidden>
       <div class="todo-completion-modal__backdrop" data-completion-modal-close></div>
@@ -154,7 +189,7 @@
             </button>
             <button
               type="submit"
-              class="todo-completion-modal__submit"
+              class="todo-completion-modal__submit button-with-feedback"
               id="completionSubmitButton"
             >
               Xác nhận
@@ -167,6 +202,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
     <script src="firebase-config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
     <script>
       const TODO_COLLECTION = "todos";
       const TIMELINE_FORM_PASSWORD = "tuilavoquan";
@@ -177,6 +213,10 @@
       let isFirebaseReady = false;
       let currentTodoIdForCompletion = null;
       let currentTodoIdForDelete = null;
+      let currentTodos = [];
+      let todoSortableInstance = null;
+      let isHandlingTodoReorder = false;
+      let currentTodoIdForUncomplete = null;
 
       function escapeHtml(value = "") {
         return value
@@ -185,6 +225,59 @@
           .replace(/>/g, "&gt;")
           .replace(/"/g, "&quot;")
           .replace(/'/g, "&#39;");
+      }
+
+      function openUncompleteModal(todoId) {
+        const modal = document.getElementById("todoUncompleteModal");
+        if (!modal) {
+          return;
+        }
+        currentTodoIdForUncomplete = todoId;
+        modal.hidden = false;
+        document.body.classList.add("todo-uncomplete-modal-open");
+        const confirmBtn = document.getElementById("uncompleteSubmitButton");
+        if (confirmBtn) {
+          confirmBtn.focus();
+        }
+      }
+
+      function closeUncompleteModal() {
+        const modal = document.getElementById("todoUncompleteModal");
+        if (!modal) {
+          return;
+        }
+        modal.hidden = true;
+        document.body.classList.remove("todo-uncomplete-modal-open");
+        const confirmBtn = document.getElementById("uncompleteSubmitButton");
+        if (confirmBtn) {
+          setButtonLoading(confirmBtn, false);
+        }
+        currentTodoIdForUncomplete = null;
+      }
+
+      async function handleUncompleteConfirm() {
+        if (!currentTodoIdForUncomplete || !firestore) {
+          closeUncompleteModal();
+          return;
+        }
+        const confirmBtn = document.getElementById("uncompleteSubmitButton");
+        try {
+          if (confirmBtn) {
+            setButtonLoading(confirmBtn, true, "Đang cập nhật...");
+          }
+          await firestore.collection(TODO_COLLECTION).doc(currentTodoIdForUncomplete).update({
+            completed: false,
+            completedAt: null,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          });
+          closeUncompleteModal();
+        } catch (error) {
+          console.error(error);
+          alert(`Không thể cập nhật: ${error?.message || String(error)}`);
+          if (confirmBtn) {
+            setButtonLoading(confirmBtn, false);
+          }
+        }
       }
 
       function escapeAttribute(value = "") {
@@ -210,6 +303,271 @@
         const hours = String(date.getHours()).padStart(2, "0");
         const minutes = String(date.getMinutes()).padStart(2, "0");
         return `${day}/${month}/${year} ${hours}:${minutes}`;
+      }
+
+      function setButtonLoading(button, isLoading, loadingLabel = "Đang xử lý...") {
+        if (!button) {
+          return;
+        }
+
+        button.classList.add("button-with-feedback");
+
+        if (isLoading) {
+          if (!button.dataset.originalLabel) {
+            button.dataset.originalLabel = button.textContent.trim();
+          }
+
+          if (!button.dataset.loadingPrevDisabled) {
+            button.dataset.loadingPrevDisabled = button.disabled ? "true" : "false";
+          }
+
+          if (typeof loadingLabel === "string" && loadingLabel) {
+            button.textContent = loadingLabel;
+          }
+
+          button.classList.add("is-loading");
+          button.setAttribute("aria-busy", "true");
+          button.disabled = true;
+        } else {
+          const originalLabel = button.dataset.originalLabel;
+
+          if (typeof originalLabel === "string") {
+            button.textContent = originalLabel;
+          }
+
+          button.classList.remove("is-loading");
+          button.removeAttribute("aria-busy");
+
+          const wasDisabled = button.dataset.loadingPrevDisabled === "true";
+          if (!wasDisabled) {
+            button.disabled = false;
+          }
+
+          delete button.dataset.loadingPrevDisabled;
+        }
+      }
+
+      function attachButtonFeedback(button) {
+        if (!button || button.dataset.buttonFeedbackBound === "true") {
+          return;
+        }
+
+        button.dataset.buttonFeedbackBound = "true";
+        button.classList.add("button-with-feedback");
+
+        const removePressed = () => {
+          if (button.classList.contains("ios-pressed")) {
+            button.classList.remove("ios-pressed");
+            // trigger spring-like release
+            button.classList.add("ios-release");
+            const cleanup = () => {
+              button.classList.remove("ios-release");
+              button.removeEventListener("animationend", cleanup);
+            };
+            button.addEventListener("animationend", cleanup);
+          }
+        };
+
+        button.addEventListener("pointerdown", (event) => {
+          if (button.disabled || button.classList.contains("is-loading")) {
+            return;
+          }
+          button.classList.remove("ios-release");
+          button.classList.add("ios-pressed");
+
+          // Ripple
+          const rect = button.getBoundingClientRect();
+          const x = event.clientX - rect.left;
+          const y = event.clientY - rect.top;
+
+          const maxDim = Math.max(rect.width, rect.height);
+          const rippleSize = maxDim * 1.35; // a bit larger than button
+
+          const ripple = document.createElement("span");
+          ripple.className = "button-ripple";
+          ripple.style.left = `${x}px`;
+          ripple.style.top = `${y}px`;
+          ripple.style.setProperty("--ripple-size", `${rippleSize}px`);
+
+          // Clean up any previous finished ripples
+          const oldRipples = button.querySelectorAll(".button-ripple");
+          oldRipples.forEach((r) => {
+            if (r.getAnimations && r.getAnimations().length === 0) {
+              r.remove();
+            }
+          });
+
+          button.appendChild(ripple);
+
+          ripple.addEventListener("animationend", () => {
+            ripple.remove();
+          });
+        });
+
+        ["pointerup", "pointerleave", "pointercancel"].forEach((eventName) => {
+          button.addEventListener(eventName, removePressed);
+        });
+
+        button.addEventListener("blur", removePressed);
+
+        button.addEventListener("keydown", (event) => {
+          if ((event.code === "Space" || event.code === "Enter") && !button.disabled && !button.classList.contains("is-loading")) {
+            button.classList.remove("ios-release");
+            button.classList.add("ios-pressed");
+          }
+        });
+
+        button.addEventListener("keyup", (event) => {
+          if (event.code === "Space" || event.code === "Enter") {
+            removePressed();
+          }
+        });
+      }
+
+      function getTodoOrderValue(todo = {}) {
+        if (typeof todo.order === "number") {
+          return todo.order;
+        }
+
+        const createdAt = todo.createdAt?.toMillis?.() || todo.createdAt || 0;
+        return createdAt ? -createdAt : 0;
+      }
+
+      function sortTodosForDisplay(todos = []) {
+        return todos
+          .slice()
+          .sort((a, b) => {
+            if (a.completed !== b.completed) {
+              return a.completed ? 1 : -1;
+            }
+
+            const orderA = getTodoOrderValue(a);
+            const orderB = getTodoOrderValue(b);
+
+            if (orderA !== orderB) {
+              return orderA - orderB;
+            }
+
+            const timeA = a.createdAt?.toMillis?.() || a.createdAt || 0;
+            const timeB = b.createdAt?.toMillis?.() || b.createdAt || 0;
+            return timeB - timeA;
+          });
+      }
+
+      function destroyTodoSortable() {
+        if (todoSortableInstance) {
+          todoSortableInstance.destroy();
+          todoSortableInstance = null;
+        }
+      }
+
+      function updateTodoSortableDisabled() {
+        if (todoSortableInstance) {
+          todoSortableInstance.option("disabled", !timelineFormUnlocked);
+        }
+      }
+
+      function setupTodoSortable() {
+        const todoListContainer = document.getElementById("todoList");
+        if (!todoListContainer) {
+          return;
+        }
+
+        const todoItems = todoListContainer.querySelectorAll(".todo-item");
+        if (!todoItems.length) {
+          destroyTodoSortable();
+          return;
+        }
+
+        if (typeof Sortable === "undefined") {
+          return;
+        }
+
+        destroyTodoSortable();
+
+        todoSortableInstance = Sortable.create(todoListContainer, {
+          animation: 150,
+          handle: ".todo-item",
+          draggable: ".todo-item",
+          filter: "input,button",
+          delay: 150,
+          delayOnTouchOnly: true,
+          touchStartThreshold: 4,
+          forceFallback: true,
+          fallbackTolerance: 3,
+          disabled: !timelineFormUnlocked,
+          onEnd: (event) => {
+            if (event.oldIndex === event.newIndex) {
+              return;
+            }
+            handleTodoReorder();
+          },
+        });
+
+        updateTodoSortableDisabled();
+      }
+
+      async function handleTodoReorder() {
+        if (!firestore || !timelineFormUnlocked || isHandlingTodoReorder) {
+          return;
+        }
+
+        const todoListContainer = document.getElementById("todoList");
+        if (!todoListContainer) {
+          return;
+        }
+
+        const todoItems = Array.from(todoListContainer.querySelectorAll(".todo-item"));
+        if (!todoItems.length) {
+          return;
+        }
+
+        const orderMap = new Map(
+          currentTodos.map((todo) => [
+            todo.id,
+            typeof todo.order === "number" ? todo.order : null,
+          ])
+        );
+
+        const batch = firestore.batch();
+        let hasChanges = false;
+        let nextIncompleteOrder = 0;
+        let nextCompletedOrder = 0;
+
+        todoItems.forEach((item) => {
+          const todoId = item.dataset.todoId;
+          if (!todoId) {
+            return;
+          }
+
+          const isCompleted = item.classList.contains("todo-item--completed");
+          const nextOrder = isCompleted ? nextCompletedOrder++ : nextIncompleteOrder++;
+          const previousOrder = orderMap.has(todoId) ? orderMap.get(todoId) : null;
+
+          if (previousOrder !== nextOrder) {
+            const docRef = firestore.collection(TODO_COLLECTION).doc(todoId);
+            batch.update(docRef, {
+              order: nextOrder,
+              updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            });
+            hasChanges = true;
+          }
+        });
+
+        if (!hasChanges) {
+          return;
+        }
+
+        isHandlingTodoReorder = true;
+
+        try {
+          await batch.commit();
+        } catch (error) {
+          console.error(error);
+          alert(`Không thể sắp xếp lại: ${error?.message || String(error)}`);
+        } finally {
+          isHandlingTodoReorder = false;
+        }
       }
 
       function createTodoItem(todo = {}) {
@@ -245,30 +603,26 @@
         const todoListContainer = document.getElementById("todoList");
         if (!todoListContainer) return;
 
+        currentTodos = Array.isArray(todos) ? todos.slice() : [];
+
         if (!Array.isArray(todos) || todos.length === 0) {
+          destroyTodoSortable();
           todoListContainer.innerHTML =
             '<p class="todo-empty">Chưa có việc cần làm nào — cùng nhau tạo danh sách nhé! 💕</p>';
           return;
         }
 
-        const sortedTodos = todos.slice().sort((a, b) => {
-          // Chưa hoàn thành trước, đã hoàn thành sau
-          if (a.completed !== b.completed) {
-            return a.completed ? 1 : -1;
-          }
-          // Sắp xếp theo thời gian tạo (mới nhất trước)
-          const timeA = a.createdAt?.toMillis?.() || a.createdAt || 0;
-          const timeB = b.createdAt?.toMillis?.() || b.createdAt || 0;
-          return timeB - timeA;
-        });
+        const sortedTodos = sortTodosForDisplay(todos);
 
         todoListContainer.innerHTML = sortedTodos.map(createTodoItem).join("");
         attachTodoHandlers();
+        setupTodoSortable();
       }
 
       function renderTodoLoading() {
         const todoListContainer = document.getElementById("todoList");
         if (!todoListContainer) return;
+        destroyTodoSortable();
         todoListContainer.innerHTML = `
           <div class="todo-loading">
             <div class="todo-loading__spinner"></div>
@@ -294,19 +648,11 @@
 
             const isChecked = checkbox.checked;
 
-            // Nếu đang uncheck (đã completed), cho phép uncheck
+            // Nếu đang uncheck (đã completed), yêu cầu xác nhận
             if (!isChecked) {
-              try {
-                await firestore.collection(TODO_COLLECTION).doc(todoId).update({
-                  completed: false,
-                  completedAt: null,
-                  updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                });
-              } catch (error) {
-                console.error(error);
-                checkbox.checked = true; // Revert checkbox
-                alert(`Không thể cập nhật: ${error?.message || String(error)}`);
-              }
+              e.preventDefault();
+              checkbox.checked = true; // giữ trạng thái cho đến khi xác nhận
+              openUncompleteModal(todoId);
               return;
             }
 
@@ -365,6 +711,7 @@
                 completedAt: data.completedAt,
                 createdAt: data.createdAt,
                 updatedAt: data.updatedAt,
+                order: typeof data.order === "number" ? data.order : null,
               };
             });
 
@@ -409,7 +756,7 @@
         event.preventDefault();
 
         if (!timelineFormUnlocked) {
-          setTodoFormStatus("Bạn cần mở khóa bằng mật khẩu trước khi thêm việc cần làm nha 💖", "warning");
+          setTodoFormStatus("Em cần mở khóa bằng mật khẩu trước khi thêm việc cần làm nha bae 💖", "warning");
           return;
         }
 
@@ -433,14 +780,14 @@
         const submitButton = document.getElementById("todoSubmitButton");
         try {
           if (submitButton) {
-            submitButton.disabled = true;
+            setButtonLoading(submitButton, true, "Đang thêm...");
           }
-
           setTodoFormStatus("Đang thêm việc cần làm...", "pending");
 
           await firestore.collection(TODO_COLLECTION).add({
             text: todoText,
             completed: false,
+            order: -Date.now(),
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
           });
@@ -456,7 +803,7 @@
           setTodoFormStatus(`Không thể thêm việc cần làm: ${error?.message || String(error)}`, "error");
         } finally {
           if (submitButton) {
-            submitButton.disabled = false;
+            setButtonLoading(submitButton, false);
           }
         }
       }
@@ -521,9 +868,8 @@
 
         try {
           if (submitButton) {
-            submitButton.disabled = true;
+            setButtonLoading(submitButton, true, "Đang lưu...");
           }
-
           // Combine date and time
           const [year, month, day] = dateValue.split("-");
           const [hours, minutes] = timeValue.split(":");
@@ -541,7 +887,7 @@
           alert(`Không thể cập nhật: ${error?.message || String(error)}`);
         } finally {
           if (submitButton) {
-            submitButton.disabled = false;
+            setButtonLoading(submitButton, false);
           }
         }
       }
@@ -653,10 +999,12 @@
           timelineFormUnlocked = true;
           setTodoFormEnabled(true);
           setTodoFormStatus("", "info");
+          updateTodoSortableDisabled();
         } else {
           timelineFormUnlocked = false;
           setTodoFormEnabled(false);
           setTodoFormStatus("Vui lòng quay lại trang chính và nhập mật khẩu để sử dụng chức năng này.", "warning");
+          updateTodoSortableDisabled();
         }
       }
 
@@ -688,6 +1036,13 @@
         todoForm.addEventListener("submit", handleTodoSubmit);
       }
 
+      const todoSubmitButton = document.getElementById("todoSubmitButton");
+      const completionSubmitButton = document.getElementById("completionSubmitButton");
+      const deletePasswordSubmitButton = document.getElementById("deletePasswordSubmitButton");
+      attachButtonFeedback(todoSubmitButton);
+      attachButtonFeedback(completionSubmitButton);
+      attachButtonFeedback(deletePasswordSubmitButton);
+
       const completionModal = document.getElementById("todoCompletionModal");
       const completionForm = document.getElementById("todoCompletionForm");
       
@@ -702,6 +1057,22 @@
 
       if (completionForm) {
         completionForm.addEventListener("submit", handleCompletionSubmit);
+      }
+
+      // Uncomplete modal bindings
+      const uncompleteModal = document.getElementById("todoUncompleteModal");
+      const uncompleteConfirmButton = document.getElementById("uncompleteSubmitButton");
+      attachButtonFeedback(uncompleteConfirmButton);
+      if (uncompleteModal) {
+        uncompleteModal.addEventListener("click", (event) => {
+          const target = event.target;
+          if (target && "uncompleteModalClose" in target.dataset) {
+            closeUncompleteModal();
+          }
+        });
+      }
+      if (uncompleteConfirmButton) {
+        uncompleteConfirmButton.addEventListener("click", handleUncompleteConfirm);
       }
 
       const deletePasswordModal = document.getElementById("todoDeletePasswordModal");
@@ -725,6 +1096,11 @@
           const deleteModal = document.getElementById("todoDeletePasswordModal");
           if (deleteModal && !deleteModal.hidden) {
             closeDeletePasswordModal();
+            return;
+          }
+          const uncompleteModalEl = document.getElementById("todoUncompleteModal");
+          if (uncompleteModalEl && !uncompleteModalEl.hidden) {
+            closeUncompleteModal();
             return;
           }
           const completionModal = document.getElementById("todoCompletionModal");
