@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Danh sách việc cần làm - Tụi mình</title>
+    <meta
+      name="description"
+      content="Danh sách việc cần làm cùng nhau của Quân và Quỳnh"
+    />
+    <link rel="icon" type="image/svg+xml" href="assets/heart-favicon.svg" />
+    <link rel="alternate icon" href="assets/heart-favicon.svg" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="floating-hearts" aria-hidden="true">
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+    <main class="love-card">
+      <button class="page-back-button" id="pageBackButton" type="button" onclick="window.location.href='index.html'">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+        <span>Quay lại</span>
+      </button>
+      <div class="title" id="storyTitle">Danh sách việc cần làm</div>
+      <p class="story-subtitle">Cùng nhau hoàn thành những việc nhỏ xinh nhé! 💕</p>
+      
+      <section class="todo-list-page" id="todoListPage">
+        <div class="todo-list" id="todoList"></div>
+      </section>
+      
+      <section class="todo-submit" id="todoSubmitSection">
+        <h2 class="todo-submit__title">Thêm việc cần làm cùng nhau</h2>
+        <p class="todo-submit__hint">
+          Cùng nhau hoàn thành những việc nhỏ xinh nhé! 💕
+        </p>
+        <form class="todo-form" id="todoForm" novalidate>
+          <label class="todo-form__field">
+            <span>Nội dung việc cần làm *</span>
+            <input
+              type="text"
+              name="todoText"
+              id="todoTextInput"
+              maxlength="200"
+              required
+              placeholder="Ví dụ: Đi xem phim cùng nhau"
+            />
+          </label>
+          <button class="todo-form__submit" id="todoSubmitButton" type="submit">
+            Ấn đây để thêm nha bae :3
+          </button>
+          <p class="todo-form__status" id="todoFormStatus" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+    </main>
+
+    <!-- Modal xác nhận mật khẩu khi xóa -->
+    <div class="todo-delete-password-modal" id="todoDeletePasswordModal" hidden>
+      <div class="todo-delete-password-modal__backdrop" data-delete-password-modal-close></div>
+      <div class="todo-delete-password-modal__dialog">
+        <button
+          type="button"
+          class="todo-delete-password-modal__close"
+          data-delete-password-modal-close
+          aria-label="Đóng"
+        >
+          ×
+        </button>
+        <h2 class="todo-delete-password-modal__title">Xác nhận xóa</h2>
+        <p class="todo-delete-password-modal__hint">
+          Vui lòng nhập mật khẩu để xác nhận xóa việc cần làm này
+        </p>
+        <form class="todo-delete-password-modal__form" id="todoDeletePasswordForm" novalidate>
+          <label class="todo-delete-password-modal__field">
+            <span>Mật khẩu *</span>
+            <input
+              type="password"
+              id="deletePasswordInput"
+              required
+              placeholder="Nhập mật khẩu"
+              autocomplete="off"
+            />
+          </label>
+          <p class="todo-delete-password-modal__status" id="deletePasswordStatus" role="status" aria-live="polite"></p>
+          <div class="todo-delete-password-modal__buttons">
+            <button
+              type="button"
+              class="todo-delete-password-modal__cancel"
+              data-delete-password-modal-close
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              class="todo-delete-password-modal__submit"
+              id="deletePasswordSubmitButton"
+            >
+              Xác nhận xóa
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal chọn ngày giờ hoàn thành -->
+    <div class="todo-completion-modal" id="todoCompletionModal" hidden>
+      <div class="todo-completion-modal__backdrop" data-completion-modal-close></div>
+      <div class="todo-completion-modal__dialog">
+        <button
+          type="button"
+          class="todo-completion-modal__close"
+          data-completion-modal-close
+          aria-label="Đóng"
+        >
+          ×
+        </button>
+        <h2 class="todo-completion-modal__title">Chọn ngày và giờ hoàn thành</h2>
+        <form class="todo-completion-modal__form" id="todoCompletionForm" novalidate>
+          <label class="todo-completion-modal__field">
+            <span>Ngày hoàn thành *</span>
+            <input
+              type="date"
+              id="completionDateInput"
+              required
+            />
+          </label>
+          <label class="todo-completion-modal__field">
+            <span>Giờ hoàn thành *</span>
+            <input
+              type="time"
+              id="completionTimeInput"
+              required
+            />
+          </label>
+          <div class="todo-completion-modal__buttons">
+            <button
+              type="button"
+              class="todo-completion-modal__cancel"
+              data-completion-modal-close
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              class="todo-completion-modal__submit"
+              id="completionSubmitButton"
+            >
+              Xác nhận
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script>
+      const TODO_COLLECTION = "todos";
+      const TIMELINE_FORM_PASSWORD = "tuilavoquan";
+
+      let firestore = null;
+      let todoUnsubscribe = null;
+      let timelineFormUnlocked = false;
+      let isFirebaseReady = false;
+      let currentTodoIdForCompletion = null;
+      let currentTodoIdForDelete = null;
+
+      function escapeHtml(value = "") {
+        return value
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function escapeAttribute(value = "") {
+        return escapeHtml(value);
+      }
+
+      function autoResizeTextarea(textarea) {
+        if (!textarea) return;
+        textarea.style.height = "auto";
+        const scrollHeight = textarea.scrollHeight;
+        const minHeight = 42;
+        const maxHeight = 200;
+        textarea.style.height = `${Math.min(Math.max(scrollHeight, minHeight), maxHeight)}px`;
+        textarea.style.overflowY = scrollHeight > maxHeight ? "auto" : "hidden";
+      }
+
+      function formatDateTime(dateTime) {
+        if (!dateTime) return "";
+        const date = dateTime.toDate ? dateTime.toDate() : new Date(dateTime);
+        const day = String(date.getDate()).padStart(2, "0");
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const year = date.getFullYear();
+        const hours = String(date.getHours()).padStart(2, "0");
+        const minutes = String(date.getMinutes()).padStart(2, "0");
+        return `${day}/${month}/${year} ${hours}:${minutes}`;
+      }
+
+      function createTodoItem(todo = {}) {
+        const { id, text = "", completed = false, createdAt, completedAt } = todo;
+        const safeId = id ? escapeAttribute(id) : "";
+        const safeText = escapeHtml(text);
+        const isCompleted = Boolean(completed);
+        const canEdit = timelineFormUnlocked;
+        const completedAtText = completedAt ? formatDateTime(completedAt) : "";
+
+        return `
+          <div class="todo-item ${isCompleted ? "todo-item--completed" : ""}" data-todo-id="${safeId}">
+            <label class="todo-item__checkbox-wrapper">
+              <input
+                type="checkbox"
+                class="todo-item__checkbox"
+                ${isCompleted ? "checked" : ""}
+                ${canEdit ? "" : "disabled"}
+                data-todo-checkbox="${safeId}"
+              />
+              <span class="todo-item__checkmark"></span>
+            </label>
+            <div class="todo-item__content">
+              <span class="todo-item__text">${safeText}</span>
+              ${completedAtText ? `<span class="todo-item__completed-date">Hoàn thành: ${escapeHtml(completedAtText)}</span>` : ""}
+            </div>
+            ${canEdit ? `<button type="button" class="todo-item__delete" data-todo-delete="${safeId}" aria-label="Xóa">×</button>` : ""}
+          </div>
+        `;
+      }
+
+      function renderTodoList(todos = []) {
+        const todoListContainer = document.getElementById("todoList");
+        if (!todoListContainer) return;
+
+        if (!Array.isArray(todos) || todos.length === 0) {
+          todoListContainer.innerHTML =
+            '<p class="todo-empty">Chưa có việc cần làm nào — cùng nhau tạo danh sách nhé! 💕</p>';
+          return;
+        }
+
+        const sortedTodos = todos.slice().sort((a, b) => {
+          // Chưa hoàn thành trước, đã hoàn thành sau
+          if (a.completed !== b.completed) {
+            return a.completed ? 1 : -1;
+          }
+          // Sắp xếp theo thời gian tạo (mới nhất trước)
+          const timeA = a.createdAt?.toMillis?.() || a.createdAt || 0;
+          const timeB = b.createdAt?.toMillis?.() || b.createdAt || 0;
+          return timeB - timeA;
+        });
+
+        todoListContainer.innerHTML = sortedTodos.map(createTodoItem).join("");
+        attachTodoHandlers();
+      }
+
+      function renderTodoLoading() {
+        const todoListContainer = document.getElementById("todoList");
+        if (!todoListContainer) return;
+        todoListContainer.innerHTML = `
+          <div class="todo-loading">
+            <div class="todo-loading__spinner"></div>
+            <div class="todo-loading__text">Đang tải danh sách việc cần làm cùng nhau...</div>
+          </div>
+        `;
+      }
+
+      function attachTodoHandlers() {
+        const checkboxes = document.querySelectorAll("[data-todo-checkbox]");
+        checkboxes.forEach((checkbox) => {
+          if (checkbox.dataset.todoHandlerBound === "true") {
+            return;
+          }
+
+          checkbox.dataset.todoHandlerBound = "true";
+          checkbox.addEventListener("change", async (e) => {
+            const todoId = checkbox.dataset.todoCheckbox;
+            if (!todoId || !firestore || !timelineFormUnlocked) {
+              checkbox.checked = false;
+              return;
+            }
+
+            const isChecked = checkbox.checked;
+
+            // Nếu đang uncheck (đã completed), cho phép uncheck
+            if (!isChecked) {
+              try {
+                await firestore.collection(TODO_COLLECTION).doc(todoId).update({
+                  completed: false,
+                  completedAt: null,
+                  updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                });
+              } catch (error) {
+                console.error(error);
+                checkbox.checked = true; // Revert checkbox
+                alert(`Không thể cập nhật: ${error?.message || String(error)}`);
+              }
+              return;
+            }
+
+            // Nếu đang check (chưa completed), mở modal để chọn ngày giờ
+            e.preventDefault();
+            checkbox.checked = false; // Tạm thời không check
+            openCompletionModal(todoId);
+          });
+        });
+
+        const deleteButtons = document.querySelectorAll("[data-todo-delete]");
+        deleteButtons.forEach((button) => {
+          if (button.dataset.todoDeleteBound === "true") {
+            return;
+          }
+
+          button.dataset.todoDeleteBound = "true";
+          button.addEventListener("click", async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const todoId = button.dataset.todoDelete;
+            if (!todoId || !firestore || !timelineFormUnlocked) {
+              return;
+            }
+
+            // Mở modal xác nhận mật khẩu
+            openDeletePasswordModal(todoId);
+          });
+        });
+      }
+
+      function subscribeToTodoCollection() {
+        if (!firestore) {
+          return;
+        }
+
+        if (typeof todoUnsubscribe === "function") {
+          todoUnsubscribe();
+        }
+
+        // Hiển thị loading trước khi có snapshot đầu tiên
+        renderTodoLoading();
+
+        const collectionRef = firestore
+          .collection(TODO_COLLECTION)
+          .orderBy("createdAt", "desc");
+
+        todoUnsubscribe = collectionRef.onSnapshot(
+          (snapshot) => {
+            const todos = snapshot.docs.map((doc) => {
+              const data = doc.data();
+              return {
+                id: doc.id,
+                text: data.text || "",
+                completed: Boolean(data.completed),
+                completedAt: data.completedAt,
+                createdAt: data.createdAt,
+                updatedAt: data.updatedAt,
+              };
+            });
+
+            renderTodoList(todos);
+          },
+          (error) => {
+            console.error(error);
+            renderTodoList([]);
+          }
+        );
+      }
+
+      function setTodoFormEnabled(isEnabled) {
+        const todoForm = document.getElementById("todoForm");
+        if (!todoForm) {
+          return;
+        }
+
+        const enableForm = Boolean(isEnabled && timelineFormUnlocked);
+        const elements = todoForm.querySelectorAll("input, button");
+        elements.forEach((element) => {
+          element.disabled = !enableForm;
+        });
+
+        todoForm.classList.toggle("todo-form--disabled", !enableForm);
+      }
+
+      function setTodoFormStatus(message, type = "info") {
+        const status = document.getElementById("todoFormStatus");
+        if (!status) {
+          return;
+        }
+
+        status.textContent = message || "";
+        const statusTypes = ["info", "success", "warning", "error", "pending"];
+        statusTypes.forEach((statusType) => {
+          status.classList.toggle(`todo-form__status--${statusType}`, statusType === type);
+        });
+      }
+
+      async function handleTodoSubmit(event) {
+        event.preventDefault();
+
+        if (!timelineFormUnlocked) {
+          setTodoFormStatus("Bạn cần mở khóa bằng mật khẩu trước khi thêm việc cần làm nha 💖", "warning");
+          return;
+        }
+
+        if (!firestore) {
+          setTodoFormStatus("Chức năng thêm việc cần làm đang được thiết lập. Vui lòng quay lại sau nhé!", "warning");
+          return;
+        }
+
+        const todoForm = document.getElementById("todoForm");
+        const todoTextInput = document.getElementById("todoTextInput");
+        if (!todoForm || !todoTextInput) {
+          return;
+        }
+
+        const todoText = (todoTextInput.value || "").trim();
+        if (!todoText) {
+          setTodoFormStatus("Vui lòng nhập nội dung việc cần làm.", "warning");
+          return;
+        }
+
+        const submitButton = document.getElementById("todoSubmitButton");
+        try {
+          if (submitButton) {
+            submitButton.disabled = true;
+          }
+
+          setTodoFormStatus("Đang thêm việc cần làm...", "pending");
+
+          await firestore.collection(TODO_COLLECTION).add({
+            text: todoText,
+            completed: false,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          });
+
+          todoForm.reset();
+          setTodoFormStatus("Đã thêm việc cần làm thành công! 💕", "success");
+
+          setTimeout(() => {
+            setTodoFormStatus("");
+          }, 2000);
+        } catch (error) {
+          console.error(error);
+          setTodoFormStatus(`Không thể thêm việc cần làm: ${error?.message || String(error)}`, "error");
+        } finally {
+          if (submitButton) {
+            submitButton.disabled = false;
+          }
+        }
+      }
+
+      function openCompletionModal(todoId) {
+        const modal = document.getElementById("todoCompletionModal");
+        const dateInput = document.getElementById("completionDateInput");
+        const timeInput = document.getElementById("completionTimeInput");
+        
+        if (!modal || !dateInput || !timeInput) {
+          return;
+        }
+
+        currentTodoIdForCompletion = todoId;
+
+        // Set default values to current date and time
+        const now = new Date();
+        const dateStr = now.toISOString().split("T")[0];
+        const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
+        dateInput.value = dateStr;
+        timeInput.value = timeStr;
+
+        modal.hidden = false;
+        document.body.classList.add("todo-completion-modal-open");
+        dateInput.focus();
+      }
+
+      function closeCompletionModal() {
+        const modal = document.getElementById("todoCompletionModal");
+        if (!modal) {
+          return;
+        }
+
+        modal.hidden = true;
+        document.body.classList.remove("todo-completion-modal-open");
+        currentTodoIdForCompletion = null;
+      }
+
+      async function handleCompletionSubmit(event) {
+        event.preventDefault();
+
+        if (!currentTodoIdForCompletion || !firestore) {
+          return;
+        }
+
+        const dateInput = document.getElementById("completionDateInput");
+        const timeInput = document.getElementById("completionTimeInput");
+        const submitButton = document.getElementById("completionSubmitButton");
+
+        if (!dateInput || !timeInput) {
+          return;
+        }
+
+        const dateValue = dateInput.value;
+        const timeValue = timeInput.value;
+
+        if (!dateValue || !timeValue) {
+          alert("Vui lòng chọn đầy đủ ngày và giờ hoàn thành.");
+          return;
+        }
+
+        try {
+          if (submitButton) {
+            submitButton.disabled = true;
+          }
+
+          // Combine date and time
+          const [year, month, day] = dateValue.split("-");
+          const [hours, minutes] = timeValue.split(":");
+          const completedDate = new Date(year, month - 1, day, hours, minutes);
+
+          await firestore.collection(TODO_COLLECTION).doc(currentTodoIdForCompletion).update({
+            completed: true,
+            completedAt: firebase.firestore.Timestamp.fromDate(completedDate),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          });
+
+          closeCompletionModal();
+        } catch (error) {
+          console.error(error);
+          alert(`Không thể cập nhật: ${error?.message || String(error)}`);
+        } finally {
+          if (submitButton) {
+            submitButton.disabled = false;
+          }
+        }
+      }
+
+      function openDeletePasswordModal(todoId) {
+        const modal = document.getElementById("todoDeletePasswordModal");
+        const passwordInput = document.getElementById("deletePasswordInput");
+        
+        if (!modal || !passwordInput) {
+          return;
+        }
+
+        currentTodoIdForDelete = todoId;
+
+        // Reset form
+        const form = document.getElementById("todoDeletePasswordForm");
+        if (form) {
+          form.reset();
+        }
+        setDeletePasswordStatus("", "info");
+
+        modal.hidden = false;
+        document.body.classList.add("todo-delete-password-modal-open");
+        passwordInput.focus();
+      }
+
+      function closeDeletePasswordModal() {
+        const modal = document.getElementById("todoDeletePasswordModal");
+        if (!modal) {
+          return;
+        }
+
+        modal.hidden = true;
+        document.body.classList.remove("todo-delete-password-modal-open");
+        currentTodoIdForDelete = null;
+
+        // Reset form
+        const form = document.getElementById("todoDeletePasswordForm");
+        const passwordInput = document.getElementById("deletePasswordInput");
+        if (form) {
+          form.reset();
+        }
+        if (passwordInput) {
+          passwordInput.value = "";
+        }
+        setDeletePasswordStatus("", "info");
+      }
+
+      function setDeletePasswordStatus(message, type = "info") {
+        const status = document.getElementById("deletePasswordStatus");
+        if (!status) {
+          return;
+        }
+
+        status.textContent = message || "";
+        const statusTypes = ["info", "success", "warning", "error", "pending"];
+        statusTypes.forEach((statusType) => {
+          status.classList.toggle(`todo-delete-password-modal__status--${statusType}`, statusType === type);
+        });
+      }
+
+      async function handleDeletePasswordSubmit(event) {
+        event.preventDefault();
+
+        if (!currentTodoIdForDelete || !firestore) {
+          return;
+        }
+
+        const passwordInput = document.getElementById("deletePasswordInput");
+        const submitButton = document.getElementById("deletePasswordSubmitButton");
+
+        if (!passwordInput) {
+          return;
+        }
+
+        const submittedPassword = passwordInput.value.trim();
+
+        if (submittedPassword !== TIMELINE_FORM_PASSWORD) {
+          setDeletePasswordStatus("Sai mật khẩu rồi, thử lại nhé 💔", "error");
+          passwordInput.value = "";
+          passwordInput.focus();
+          return;
+        }
+
+        try {
+          if (submitButton) {
+            submitButton.disabled = true;
+          }
+
+          setDeletePasswordStatus("Đang xóa...", "pending");
+
+          await firestore.collection(TODO_COLLECTION).doc(currentTodoIdForDelete).delete();
+
+          closeDeletePasswordModal();
+        } catch (error) {
+          console.error(error);
+          setDeletePasswordStatus(`Không thể xóa: ${error?.message || String(error)}`, "error");
+        } finally {
+          if (submitButton) {
+            submitButton.disabled = false;
+          }
+        }
+      }
+
+      function checkUnlockStatus() {
+        // Kiểm tra localStorage để xem đã unlock chưa
+        const unlocked = localStorage.getItem("timelineFormUnlocked");
+        if (unlocked === "true") {
+          timelineFormUnlocked = true;
+          setTodoFormEnabled(true);
+          setTodoFormStatus("", "info");
+        } else {
+          timelineFormUnlocked = false;
+          setTodoFormEnabled(false);
+          setTodoFormStatus("Vui lòng quay lại trang chính và nhập mật khẩu để sử dụng chức năng này.", "warning");
+        }
+      }
+
+      function initFirebase() {
+        if (!window.firebase || !window.FIREBASE_CONFIG) {
+          setTodoFormStatus("Firebase chưa được cấu hình.", "error");
+          return;
+        }
+
+        try {
+          if (!firebase.apps.length) {
+            firebase.initializeApp(window.FIREBASE_CONFIG);
+          }
+          firestore = firebase.firestore();
+          isFirebaseReady = true;
+          
+          checkUnlockStatus();
+          // Hiển thị loading ngay khi khởi tạo
+          renderTodoLoading();
+          subscribeToTodoCollection();
+        } catch (error) {
+          console.error(error);
+          setTodoFormStatus("Không thể khởi tạo Firebase.", "error");
+        }
+      }
+
+      const todoForm = document.getElementById("todoForm");
+      if (todoForm) {
+        todoForm.addEventListener("submit", handleTodoSubmit);
+      }
+
+      const completionModal = document.getElementById("todoCompletionModal");
+      const completionForm = document.getElementById("todoCompletionForm");
+      
+      if (completionModal) {
+        completionModal.addEventListener("click", (event) => {
+          const target = event.target;
+          if (target && "completionModalClose" in target.dataset) {
+            closeCompletionModal();
+          }
+        });
+      }
+
+      if (completionForm) {
+        completionForm.addEventListener("submit", handleCompletionSubmit);
+      }
+
+      const deletePasswordModal = document.getElementById("todoDeletePasswordModal");
+      const deletePasswordForm = document.getElementById("todoDeletePasswordForm");
+      
+      if (deletePasswordModal) {
+        deletePasswordModal.addEventListener("click", (event) => {
+          const target = event.target;
+          if (target && "deletePasswordModalClose" in target.dataset) {
+            closeDeletePasswordModal();
+          }
+        });
+      }
+
+      if (deletePasswordForm) {
+        deletePasswordForm.addEventListener("submit", handleDeletePasswordSubmit);
+      }
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          const deleteModal = document.getElementById("todoDeletePasswordModal");
+          if (deleteModal && !deleteModal.hidden) {
+            closeDeletePasswordModal();
+            return;
+          }
+          const completionModal = document.getElementById("todoCompletionModal");
+          if (completionModal && !completionModal.hidden) {
+            closeCompletionModal();
+          }
+        }
+      });
+
+      initFirebase();
+
+      window.addEventListener("unload", () => {
+        if (typeof todoUnsubscribe === "function") {
+          todoUnsubscribe();
+        }
+      });
+    </script>
+  </body>
+</html>
+

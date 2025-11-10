@@ -235,6 +235,57 @@
       </footer>
     </main>
 
+    <div class="heart-menu-modal" id="heartMenuModal" hidden>
+      <div class="heart-menu-modal__backdrop" data-heart-menu-close></div>
+      <div
+        class="heart-menu-modal__dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="heartMenuTitle"
+      >
+        <button
+          type="button"
+          class="heart-menu-modal__close"
+          data-heart-menu-close
+          aria-label="Đóng"
+        >
+          ×
+        </button>
+        <h2 class="heart-menu-modal__title" id="heartMenuTitle">
+          Chọn chức năng 💝
+        </h2>
+        <p class="heart-menu-modal__hint">
+          Bạn muốn làm gì tiếp theo?
+        </p>
+        <div class="heart-menu-modal__buttons">
+          <button
+            type="button"
+            class="heart-menu-modal__button"
+            id="heartMenuTodoButton"
+            data-action="todo"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 11 12 14 22 4"></polyline>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+            </svg>
+            <span>Xem danh sách việc làm cùng nhaoo</span>
+          </button>
+          <button
+            type="button"
+            class="heart-menu-modal__button"
+            id="heartMenuTimelineButton"
+            data-action="timeline"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <span>Quản lý cột mốc yêu thương</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div class="timeline-password-modal" id="timelinePasswordModal" hidden>
       <div class="timeline-password-modal__backdrop" data-password-modal-close></div>
       <div
@@ -1693,6 +1744,8 @@
         }
 
         timelineFormUnlocked = true;
+        // Lưu trạng thái unlock vào localStorage
+        localStorage.setItem("timelineFormUnlocked", "true");
         setTimelineSubmitSectionVisibility(true);
         timelinePasswordInput.value = "";
 
@@ -1730,13 +1783,69 @@
             }
           }
         }, 100);
-        
-        timelineSubmitSection?.scrollIntoView({ behavior: "smooth", block: "center" });
 
-        // Focus vào date field sau khi modal đóng và form hiển thị
+        // Sau khi unlock, mở heart menu modal
         setTimeout(() => {
-          focusTimelineFirstField();
+          openHeartMenuModal();
         }, 300);
+      }
+
+      function openHeartMenuModal() {
+        const modal = document.getElementById("heartMenuModal");
+        if (!modal) {
+          return;
+        }
+
+        modal.hidden = false;
+        modal.classList.add("heart-menu-modal--open");
+        document.body.classList.add("heart-menu-modal-open");
+      }
+
+      function closeHeartMenuModal() {
+        const modal = document.getElementById("heartMenuModal");
+        if (!modal) {
+          return;
+        }
+
+        modal.classList.remove("heart-menu-modal--open");
+        modal.hidden = true;
+        document.body.classList.remove("heart-menu-modal-open");
+      }
+
+      function navigateToPage(page) {
+        closeHeartMenuModal();
+        
+        if (page === "todo") {
+          // Lưu trạng thái unlock vào localStorage
+          if (timelineFormUnlocked) {
+            localStorage.setItem("timelineFormUnlocked", "true");
+          }
+          // Chuyển đến trang todo
+          window.location.href = "vieccanlam.html";
+        } else if (page === "timeline") {
+          // Mở timeline section và scroll đến đó
+          const timelineSection = document.getElementById("timelineSection");
+          const timelineToggle = document.getElementById("timelineToggle");
+          if (timelineSection && timelineToggle) {
+            if (!timelineSection.classList.contains("open")) {
+              timelineSection.classList.add("open");
+              timelineSection.setAttribute("aria-hidden", "false");
+              timelineToggle.textContent = "Ẩn cột mốc yêu thương";
+            }
+            setTimeout(() => {
+              timelineSection.scrollIntoView({ behavior: "smooth", block: "start" });
+              // Nếu đã unlock, scroll đến form submit
+              if (timelineFormUnlocked) {
+                setTimeout(() => {
+                  const timelineSubmitSection = document.getElementById("timelineSubmitSection");
+                  if (timelineSubmitSection) {
+                    timelineSubmitSection.scrollIntoView({ behavior: "smooth", block: "center" });
+                  }
+                }, 500);
+              }
+            }, 100);
+          }
+        }
       }
 
       function handleHeartActivation(event) {
@@ -1751,23 +1860,14 @@
 
         event.preventDefault();
 
+        // Nếu chưa unlock, mở password modal trước
         if (!timelineFormUnlocked) {
           openTimelinePasswordModal();
           return;
         }
 
-        setTimelineSubmitSectionVisibility(true);
-        if (timelineForm) {
-          timelineForm.hidden = false;
-          setTimelineDateToToday();
-        }
-
-        timelineSubmitSection?.scrollIntoView({ behavior: "smooth", block: "center" });
-        
-        // Focus vào date field sau khi scroll
-        setTimeout(() => {
-          focusTimelineFirstField();
-        }, 300);
+        // Nếu đã unlock, mở heart menu modal
+        openHeartMenuModal();
       }
 
       function initFirebaseTimeline() {
@@ -1813,6 +1913,18 @@
             console.warn("Firebase Storage SDK chưa được tải.");
           }
           isFirebaseReady = true;
+          
+          // Kiểm tra localStorage để khôi phục trạng thái unlock
+          const savedUnlock = localStorage.getItem("timelineFormUnlocked");
+          if (savedUnlock === "true") {
+            timelineFormUnlocked = true;
+            unlockHeart?.classList.add("heart--unlocked");
+            setTimelineSubmitSectionVisibility(true);
+            if (timelineForm) {
+              timelineForm.hidden = false;
+            }
+          }
+          
           if (timelineFormUnlocked) {
             setTimelineFormEnabled(true);
             setTimelineFormStatus("Kể thêm cột mốc mới nhé 💖", "success");
@@ -2329,6 +2441,7 @@
         });
       }
 
+
       function setupLightboxInfrastructure() {
         lightboxElement = document.getElementById("lightbox");
         lightboxMediaContainer = document.getElementById("lightboxMedia");
@@ -2355,6 +2468,11 @@
 
       document.addEventListener("keydown", (event) => {
         if (event.key === "Escape") {
+          const heartMenuModal = document.getElementById("heartMenuModal");
+          if (heartMenuModal && !heartMenuModal.hidden) {
+            closeHeartMenuModal();
+            return;
+          }
           if (timelinePasswordModal && !timelinePasswordModal.hidden) {
             closeTimelinePasswordModal();
             return;
@@ -2500,6 +2618,31 @@
       if (unlockHeart) {
         unlockHeart.addEventListener("click", handleHeartActivation);
         unlockHeart.addEventListener("keydown", handleHeartActivation);
+      }
+
+      const heartMenuModal = document.getElementById("heartMenuModal");
+      const heartMenuTodoButton = document.getElementById("heartMenuTodoButton");
+      const heartMenuTimelineButton = document.getElementById("heartMenuTimelineButton");
+
+      if (heartMenuModal) {
+        heartMenuModal.addEventListener("click", (event) => {
+          const target = event.target;
+          if (target && "heartMenuClose" in target.dataset) {
+            closeHeartMenuModal();
+          }
+        });
+      }
+
+      if (heartMenuTodoButton) {
+        heartMenuTodoButton.addEventListener("click", () => {
+          navigateToPage("todo");
+        });
+      }
+
+      if (heartMenuTimelineButton) {
+        heartMenuTimelineButton.addEventListener("click", () => {
+          navigateToPage("timeline");
+        });
       }
 
       if (timelinePasswordModal) {
