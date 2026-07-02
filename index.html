@@ -1667,11 +1667,26 @@
           },
           (error) => {
             console.error(error);
-            setTimelineFormStatus(
-              "Không thể tải cột mốc mới từ Firebase. Đang hiển thị dữ liệu dự phòng.",
-              "warning"
-            );
-            renderTimeline(timelineFallback);
+            const isPermissionError =
+              error?.code === "permission-denied" ||
+              String(error?.message || "").toLowerCase().includes("permission");
+
+            if (isPermissionError) {
+              setTimelineFormStatus(
+                "Phiên đăng nhập chưa có quyền đọc cột mốc. Vui lòng đăng nhập lại nhé.",
+                "warning"
+              );
+              displayError("Bạn cần đăng nhập để xem cột mốc yêu thương.");
+              if (REQUIRE_PASSWORD_ON_ENTRY) {
+                auth?.signOut?.().catch(() => {});
+                timelineFormUnlocked = false;
+                openTimelinePasswordModal();
+              }
+              return;
+            }
+
+            setTimelineFormStatus("Không thể tải cột mốc mới từ Firebase.", "warning");
+            displayError("Không thể tải cột mốc từ Firebase. Vui lòng thử lại sau.");
           }
         );
       }
@@ -2004,6 +2019,7 @@
               unlockPrivatePage();
               subscribeToTimelineCollection();
             } else if (!user && REQUIRE_PASSWORD_ON_ENTRY && !timelineFormUnlocked) {
+              displayError("Nhập mật khẩu để xem cột mốc yêu thương.");
               openTimelinePasswordModal();
             }
           });
