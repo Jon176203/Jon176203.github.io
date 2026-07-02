@@ -471,7 +471,7 @@
       const TIMELINE_COLLECTION = "timelineEntries";
       const DEFAULT_AUTH_EMAIL = "7522nguyenquan@gmail.com";
       const MAX_UPLOAD_SIZE_BYTES = 12 * 1024 * 1024; // ~12MB
-      const REQUIRE_PASSWORD_ON_ENTRY = true;
+      const REQUIRE_PASSWORD_ON_INTERACTION = true;
       const LEGACY_TIMELINE_MEDIA_REPLACEMENTS = [
         {
           match: "1771136140339_IMG_7693",
@@ -494,6 +494,7 @@
       let timelineMediaSelections = [];
       let timelineAddImageSelections = [];
       let currentTimelineEntryId = null;
+      let pendingAuthAction = null;
 
       const LIGHTBOX_TRIGGER_SELECTOR = "[data-media-trigger]";
       let lightboxElement;
@@ -1014,6 +1015,41 @@
         `).join("");
       }
 
+      function setTimelineSectionOpen(isOpen) {
+        if (!timelineSection || !timelineToggle) {
+          return;
+        }
+
+        timelineSection.classList.toggle("open", Boolean(isOpen));
+        timelineSection.setAttribute("aria-hidden", (!isOpen).toString());
+        timelineToggle.textContent = isOpen
+          ? "Ẩn cột mốc yêu thương"
+          : "Xem cột mốc yêu thương";
+
+        if (isOpen && timelineFormUnlocked) {
+          const timelineGrid = document.getElementById("timelineGrid");
+          const hasTimelineContent = Boolean(timelineGrid?.children?.length);
+          if (!hasTimelineContent) {
+            renderTimelineSkeleton();
+          }
+        }
+      }
+
+      function handlePostAuthAction() {
+        const action = pendingAuthAction;
+        pendingAuthAction = null;
+
+        if (action === "timeline") {
+          setTimelineSectionOpen(true);
+          timelineSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+          return;
+        }
+
+        if (action === "heart") {
+          openHeartMenuModal();
+        }
+      }
+
       function setTimelineSubmitSectionVisibility(isVisible) {
         if (!timelineSubmitSection) {
           return;
@@ -1152,7 +1188,10 @@
         timelinePasswordModal.hidden = false;
         timelinePasswordModal.classList.add("timeline-password-modal--open");
         document.body.classList.add("timeline-password-modal-open");
-        document.body.classList.toggle("site-locked", REQUIRE_PASSWORD_ON_ENTRY && !timelineFormUnlocked);
+        document.body.classList.toggle(
+          "site-locked",
+          REQUIRE_PASSWORD_ON_INTERACTION && !timelineFormUnlocked
+        );
         setTimelinePasswordStatus("Nhập mật khẩu để vào trang nhé 🌟", "info");
 
         window.requestAnimationFrame(() => {
@@ -1165,7 +1204,7 @@
           return;
         }
 
-        if (REQUIRE_PASSWORD_ON_ENTRY && !timelineFormUnlocked && !options.force) {
+        if (REQUIRE_PASSWORD_ON_INTERACTION && !timelineFormUnlocked && !options.force) {
           setTimelinePasswordStatus("Nhập đúng mật khẩu để vào trang nhé 💗", "warning");
           timelinePasswordInput?.focus();
           return;
@@ -1677,7 +1716,7 @@
                 "warning"
               );
               displayError("Bạn cần đăng nhập để xem cột mốc yêu thương.");
-              if (REQUIRE_PASSWORD_ON_ENTRY) {
+              if (REQUIRE_PASSWORD_ON_INTERACTION) {
                 auth?.signOut?.().catch(() => {});
                 timelineFormUnlocked = false;
                 openTimelinePasswordModal();
@@ -1892,12 +1931,7 @@
           }
         }, 100);
 
-        if (!REQUIRE_PASSWORD_ON_ENTRY) {
-          // Sau khi unlock, mở heart menu modal
-          setTimeout(() => {
-            openHeartMenuModal();
-          }, 300);
-        }
+        setTimeout(handlePostAuthAction, 250);
       }
 
       function openHeartMenuModal() {
@@ -1968,6 +2002,7 @@
 
         // Nếu chưa unlock, mở password modal trước
         if (!timelineFormUnlocked) {
+          pendingAuthAction = "heart";
           openTimelinePasswordModal();
           return;
         }
@@ -2018,9 +2053,6 @@
             if (user && !timelineFormUnlocked) {
               unlockPrivatePage();
               subscribeToTimelineCollection();
-            } else if (!user && REQUIRE_PASSWORD_ON_ENTRY && !timelineFormUnlocked) {
-              displayError("Nhập mật khẩu để xem cột mốc yêu thương.");
-              openTimelinePasswordModal();
             }
           });
           
@@ -2706,18 +2738,14 @@
 
       if (timelineToggle && timelineSection) {
         timelineToggle.addEventListener("click", () => {
-          const isOpen = timelineSection.classList.toggle("open");
-          timelineSection.setAttribute("aria-hidden", (!isOpen).toString());
-          timelineToggle.textContent = isOpen
-            ? "Ẩn cột mốc yêu thương"
-            : "Xem cột mốc yêu thương";
-          if (isOpen && timelineFormUnlocked) {
-            const timelineGrid = document.getElementById("timelineGrid");
-            const hasTimelineContent = Boolean(timelineGrid?.children?.length);
-            if (!hasTimelineContent) {
-              renderTimelineSkeleton();
-            }
+          if (!timelineFormUnlocked) {
+            pendingAuthAction = "timeline";
+            openTimelinePasswordModal();
+            return;
           }
+
+          const isOpen = !timelineSection.classList.contains("open");
+          setTimelineSectionOpen(isOpen);
         });
       }
 
