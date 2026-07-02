@@ -200,6 +200,7 @@
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
     <script src="firebase-config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
@@ -207,6 +208,7 @@
       const TODO_COLLECTION = "todos";
       const TIMELINE_FORM_PASSWORD = "tuilavoquan";
 
+      let auth = null;
       let firestore = null;
       let todoUnsubscribe = null;
       let timelineFormUnlocked = false;
@@ -631,6 +633,13 @@
         `;
       }
 
+      function renderTodoMessage(message) {
+        const todoListContainer = document.getElementById("todoList");
+        if (!todoListContainer) return;
+        destroyTodoSortable();
+        todoListContainer.innerHTML = `<p class="todo-empty">${escapeHtml(message)}</p>`;
+      }
+
       function attachTodoHandlers() {
         const checkboxes = document.querySelectorAll("[data-todo-checkbox]");
         checkboxes.forEach((checkbox) => {
@@ -992,10 +1001,8 @@
         }
       }
 
-      function checkUnlockStatus() {
-        // Kiểm tra localStorage để xem đã unlock chưa
-        const unlocked = localStorage.getItem("timelineFormUnlocked");
-        if (unlocked === "true") {
+      function checkUnlockStatus(user = auth?.currentUser) {
+        if (user) {
           timelineFormUnlocked = true;
           setTodoFormEnabled(true);
           setTodoFormStatus("", "info");
@@ -1003,7 +1010,7 @@
         } else {
           timelineFormUnlocked = false;
           setTodoFormEnabled(false);
-          setTodoFormStatus("Vui lòng quay lại trang chính và nhập mật khẩu để sử dụng chức năng này.", "warning");
+          setTodoFormStatus("Vui lòng quay lại trang chính và đăng nhập để sử dụng chức năng này.", "warning");
           updateTodoSortableDisabled();
         }
       }
@@ -1018,13 +1025,23 @@
           if (!firebase.apps.length) {
             firebase.initializeApp(window.FIREBASE_CONFIG);
           }
+          auth = firebase.auth();
           firestore = firebase.firestore();
           isFirebaseReady = true;
           
-          checkUnlockStatus();
-          // Hiển thị loading ngay khi khởi tạo
-          renderTodoLoading();
-          subscribeToTodoCollection();
+          auth.onAuthStateChanged((user) => {
+            checkUnlockStatus(user);
+            if (user) {
+              renderTodoLoading();
+              subscribeToTodoCollection();
+            } else {
+              if (typeof todoUnsubscribe === "function") {
+                todoUnsubscribe();
+                todoUnsubscribe = null;
+              }
+              renderTodoMessage("Vui lòng quay lại trang chính và đăng nhập để xem danh sách nhé.");
+            }
+          });
         } catch (error) {
           console.error(error);
           setTodoFormStatus("Không thể khởi tạo Firebase.", "error");

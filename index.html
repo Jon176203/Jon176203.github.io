@@ -63,7 +63,7 @@
           <div class="avatar">
             <img id="avatarA" src="assets/nguyenminhquan.jpg" alt="Nguyễn Minh Quân" />
           </div>
-          <div class="name-tag" id="nameA">Tên người A</div>
+          <div class="name-tag" id="nameA">Nguyễn Minh Quân</div>
           <div class="zodiac-tag" id="zodiacA" hidden>Cung hoàng đạo</div>
         </div>
         <div
@@ -79,7 +79,7 @@
           <div class="avatar">
             <img id="avatarB" src="assets/diemquynh2.jpg" alt="Châu Nguyễn Diễm Quỳnh" />
           </div>
-          <div class="name-tag" id="nameB">Tên người B</div>
+          <div class="name-tag" id="nameB">Châu Nguyễn Diễm Quỳnh</div>
           <div class="zodiac-tag" id="zodiacB" hidden>Cung hoàng đạo</div>
         </div>
       </section>
@@ -309,6 +309,13 @@
           Nhập mật khẩu để vào trang nhé!
         </p>
         <form class="timeline-password" id="timelinePasswordForm" autocomplete="off">
+          <input
+            type="hidden"
+            name="timelineEmail"
+            id="timelineEmailInput"
+            value="7522nguyenquan@gmail.com"
+            autocomplete="username"
+          />
           <label class="timeline-form__field timeline-form__field--full">
             <span>Mật khẩu *</span>
             <div class="timeline-form__password-wrapper">
@@ -319,6 +326,7 @@
                 required
                 placeholder="••••••"
                 minlength="4"
+                autocomplete="current-password"
               />
               <button
                 type="button"
@@ -437,6 +445,7 @@
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
     <script src="firebase-config.js"></script>
     <script>
@@ -460,12 +469,13 @@
       };
 
       const TIMELINE_COLLECTION = "timelineEntries";
-      const TIMELINE_FORM_PASSWORD = "tuilavoquan";
+      const DEFAULT_AUTH_EMAIL = "7522nguyenquan@gmail.com";
       const MAX_UPLOAD_SIZE_BYTES = 12 * 1024 * 1024; // ~12MB
       const REQUIRE_PASSWORD_ON_ENTRY = true;
 
       let storyConfig = null;
       let startDate;
+      let auth = null;
       let firestore = null;
       let timelineUnsubscribe = null;
       let timelineFallback = [];
@@ -1765,41 +1775,44 @@
         }
       }
 
-      function handleTimelinePasswordSubmit(event) {
+      async function handleTimelinePasswordSubmit(event) {
         event.preventDefault();
 
-        if (!timelinePasswordInput) {
+        if (!timelinePasswordInput || !auth) {
           return;
         }
 
+        const submittedEmail = timelineEmailInput?.value?.trim() || DEFAULT_AUTH_EMAIL;
         const submittedPassword = timelinePasswordInput.value.trim();
 
-        if (submittedPassword !== TIMELINE_FORM_PASSWORD) {
-          setTimelinePasswordStatus("Sai mật khẩu rồi, thử lại nhé 💔", "error");
+        if (!submittedPassword) {
+          setTimelinePasswordStatus("Nhập mật khẩu để vào trang nhé 💗", "warning");
+          return;
+        }
+
+        const submitButton = document.getElementById("timelinePasswordUnlockButton");
+
+        try {
+          if (submitButton) {
+            submitButton.disabled = true;
+          }
+
+          setTimelinePasswordStatus("Đang kiểm tra tài khoản...", "pending");
+          await auth.signInWithEmailAndPassword(submittedEmail, submittedPassword);
+          timelinePasswordInput.value = "";
+          unlockPrivatePage();
+          subscribeToTimelineCollection();
+        } catch (error) {
+          console.error(error);
+          setTimelinePasswordStatus("Mật khẩu chưa đúng, thử lại nhé 💔", "error");
           timelinePasswordInput.value = "";
           timelinePasswordInput.focus();
           return;
+        } finally {
+          if (submitButton) {
+            submitButton.disabled = false;
+          }
         }
-
-        timelineFormUnlocked = true;
-        setTimelineSubmitSectionVisibility(true);
-        timelinePasswordInput.value = "";
-
-        if (timelineForm) {
-          timelineForm.hidden = false;
-          setTimelineDateToToday();
-        }
-
-        if (isFirebaseReady) {
-          setTimelineFormEnabled(true);
-          setTimelineFormStatus("Kể thêm cột mốc mới nhé 💖", "success");
-        } else {
-          setTimelineFormEnabled(false);
-          setTimelineFormStatus("Đang kết nối Firebase, vui lòng chờ nhé...", "pending");
-        }
-
-        closeTimelinePasswordModal({ restoreFocus: false });
-        unlockHeart?.classList.add("heart--unlocked");
         
         // Re-render timeline để hiển thị nút "Thêm ảnh" sau khi unlock
         setTimeout(() => {
@@ -1939,8 +1952,17 @@
           if (!firebase.apps.length) {
             firebase.initializeApp(window.FIREBASE_CONFIG);
           }
+          auth = firebase.auth();
           firestore = firebase.firestore();
           isFirebaseReady = true;
+          auth.onAuthStateChanged((user) => {
+            if (user && !timelineFormUnlocked) {
+              unlockPrivatePage();
+              subscribeToTimelineCollection();
+            } else if (!user && REQUIRE_PASSWORD_ON_ENTRY && !timelineFormUnlocked) {
+              openTimelinePasswordModal();
+            }
+          });
           
           if (timelineFormUnlocked) {
             setTimelineFormEnabled(true);
@@ -1952,10 +1974,6 @@
               timelinePasswordForm.hidden = false;
             }
             setTimelinePasswordStatus("Nhập mật khẩu để vào trang nhé 🌟", "info");
-          }
-          subscribeToTimelineCollection();
-          if (REQUIRE_PASSWORD_ON_ENTRY && !timelineFormUnlocked) {
-            openTimelinePasswordModal();
           }
         } catch (error) {
           console.error(error);
@@ -2611,6 +2629,7 @@
       const timelineSubmitSection = document.getElementById("timelineSubmitSection");
       const timelinePasswordModal = document.getElementById("timelinePasswordModal");
       const timelinePasswordForm = document.getElementById("timelinePasswordForm");
+      const timelineEmailInput = document.getElementById("timelineEmailInput");
       const timelinePasswordInput = document.getElementById("timelinePasswordInput");
       const timelinePasswordToggle = document.getElementById("timelinePasswordToggle");
       const timelinePasswordStatus = document.getElementById("timelinePasswordStatus");
@@ -2673,6 +2692,27 @@
             closeTimelinePasswordModal();
           }
         });
+      }
+
+      function unlockPrivatePage() {
+        timelineFormUnlocked = true;
+        setTimelineSubmitSectionVisibility(true);
+
+        if (timelineForm) {
+          timelineForm.hidden = false;
+          setTimelineDateToToday();
+        }
+
+        if (isFirebaseReady) {
+          setTimelineFormEnabled(true);
+          setTimelineFormStatus("Kể thêm cột mốc mới nhé 💖", "success");
+        } else {
+          setTimelineFormEnabled(false);
+          setTimelineFormStatus("Đang kết nối Firebase, vui lòng chờ nhé...", "pending");
+        }
+
+        closeTimelinePasswordModal({ restoreFocus: false });
+        unlockHeart?.classList.add("heart--unlocked");
       }
 
       function togglePasswordVisibility() {
