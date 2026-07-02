@@ -472,6 +472,16 @@
       const DEFAULT_AUTH_EMAIL = "7522nguyenquan@gmail.com";
       const MAX_UPLOAD_SIZE_BYTES = 12 * 1024 * 1024; // ~12MB
       const REQUIRE_PASSWORD_ON_ENTRY = true;
+      const LEGACY_TIMELINE_MEDIA_REPLACEMENTS = [
+        {
+          match: "1771136140339_IMG_7693",
+          src: "https://res.cloudinary.com/v8i5rbkk/image/upload/v1783009259/timelineUploads/recovered/recovered_choioixinh.jpg",
+        },
+        {
+          match: "Chọi oii xinhhhh",
+          src: "https://res.cloudinary.com/v8i5rbkk/image/upload/v1783009259/timelineUploads/recovered/recovered_choioixinh.jpg",
+        },
+      ];
 
       let storyConfig = null;
       let startDate;
@@ -985,6 +995,25 @@
         attachAddImageHandlers();
       }
 
+      function renderTimelineSkeleton(count = 3) {
+        const grid = document.getElementById("timelineGrid");
+
+        if (!grid) return;
+
+        grid.innerHTML = Array.from({ length: count }, () => `
+          <article class="timeline-card timeline-card--skeleton" aria-hidden="true">
+            <div class="timeline-skeleton timeline-skeleton__media"></div>
+            <div class="timeline-skeleton__body">
+              <span class="timeline-skeleton timeline-skeleton__date"></span>
+              <span class="timeline-skeleton timeline-skeleton__title"></span>
+              <span class="timeline-skeleton timeline-skeleton__pill"></span>
+              <span class="timeline-skeleton timeline-skeleton__line"></span>
+              <span class="timeline-skeleton timeline-skeleton__line timeline-skeleton__line--short"></span>
+            </div>
+          </article>
+        `).join("");
+      }
+
       function setTimelineSubmitSectionVisibility(isVisible) {
         if (!timelineSubmitSection) {
           return;
@@ -1168,6 +1197,15 @@
         }
 
         return "auto";
+      }
+
+      function resolveTimelineMediaSrc(src = "", caption = "", alt = "") {
+        const haystack = `${src} ${caption} ${alt}`;
+        const replacement = LEGACY_TIMELINE_MEDIA_REPLACEMENTS.find((item) =>
+          haystack.includes(item.match)
+        );
+
+        return replacement?.src || src;
       }
 
       function resetTimelineMediaSelections() {
@@ -1546,7 +1584,11 @@
           return null;
         }
 
-        const src = item.src || item.url;
+        const src = resolveTimelineMediaSrc(
+          item.src || item.url || "",
+          item.caption || "",
+          item.alt || ""
+        );
         if (!src) {
           return null;
         }
@@ -1590,6 +1632,8 @@
         if (typeof timelineUnsubscribe === "function") {
           timelineUnsubscribe();
         }
+
+        renderTimelineSkeleton();
 
         const collectionRef = firestore
           .collection(TIMELINE_COLLECTION)
@@ -2651,6 +2695,13 @@
           timelineToggle.textContent = isOpen
             ? "Ẩn cột mốc yêu thương"
             : "Xem cột mốc yêu thương";
+          if (isOpen && timelineFormUnlocked) {
+            const timelineGrid = document.getElementById("timelineGrid");
+            const hasTimelineContent = Boolean(timelineGrid?.children?.length);
+            if (!hasTimelineContent) {
+              renderTimelineSkeleton();
+            }
+          }
         });
       }
 
