@@ -10,6 +10,13 @@
   box-sizing: border-box;
 }
 
+html {
+  min-height: 100%;
+  background: #ffafcc;
+  background-image: var(--bg-gradient);
+  background-attachment: fixed;
+}
+
 body {
   margin: 0;
   --body-padding: clamp(18px, 6vw, 48px);
@@ -24,18 +31,32 @@ body {
   padding-bottom: calc(var(--body-padding) + env(safe-area-inset-bottom, 0px));
   padding-left: calc(var(--body-padding) + env(safe-area-inset-left, 0px));
   font-family: "Poppins", "Segoe UI", sans-serif;
-  background: var(--bg-gradient);
+  background: transparent;
   color: var(--text-color);
   position: relative;
   overflow-x: hidden;
+  isolation: isolate;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--bg-gradient);
+  transform: translateZ(0);
 }
 
 .floating-hearts {
   position: fixed;
   inset: 0;
+  height: 100vh;
+  height: 100dvh;
   pointer-events: none;
   overflow: hidden;
   z-index: 0;
+  contain: layout paint;
 }
 
 .floating-hearts span {
@@ -206,12 +227,15 @@ body {
   width: min(90vw, 680px);
   padding: 48px clamp(24px, 6vw, 64px);
   border-radius: 32px;
-  background: var(--card-bg);
+  background: rgba(255, 255, 255, 0.78);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   box-shadow: 0 18px 38px rgba(255, 71, 126, 0.2);
   text-align: center;
   position: relative;
   z-index: 1;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 .hero-banner {
