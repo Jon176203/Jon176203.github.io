@@ -438,7 +438,6 @@
 
     <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-storage-compat.js"></script>
     <script src="firebase-config.js"></script>
     <script>
       const DATA_URL = "data/story.json";
@@ -462,13 +461,11 @@
 
       const TIMELINE_COLLECTION = "timelineEntries";
       const TIMELINE_FORM_PASSWORD = "tuilavoquan";
-      const STORAGE_UPLOAD_FOLDER = "timelineUploads";
       const MAX_UPLOAD_SIZE_BYTES = 12 * 1024 * 1024; // ~12MB
 
       let storyConfig = null;
       let startDate;
       let firestore = null;
-      let storage = null;
       let timelineUnsubscribe = null;
       let timelineFallback = [];
       let isFirebaseReady = false;
@@ -1464,31 +1461,63 @@
           ?.slice(0, 120) || "media";
       }
 
+      function getCloudinaryConfig() {
+        const config = window.CLOUDINARY_CONFIG || {};
+        return {
+          cloudName: (config.cloudName || "").trim(),
+          uploadPreset: (config.uploadPreset || "").trim(),
+          folder: (config.folder || "").trim(),
+        };
+      }
+
+      function isCloudinaryUploadReady() {
+        const { cloudName, uploadPreset } = getCloudinaryConfig();
+        return Boolean(cloudName && uploadPreset);
+      }
+
       async function uploadTimelineMediaFile(file, context = {}) {
-        if (!storage) {
-          throw new Error("Firebase Storage chưa sẵn sàng để tải file.");
+        const { cloudName, uploadPreset, folder } = getCloudinaryConfig();
+        if (!cloudName || !uploadPreset) {
+          throw new Error("Cloudinary chưa được cấu hình cloudName hoặc uploadPreset.");
         }
 
         const { title = "", caption = "" } = context;
         const sanitizedName = sanitizeStorageFileName(file.name || "media");
-        const timestamp = Date.now();
-        const storagePath = `${STORAGE_UPLOAD_FOLDER}/${timestamp}_${sanitizedName}`;
+        const uploadUrl = `https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/auto/upload`;
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("upload_preset", uploadPreset);
+        formData.append("public_id", `${Date.now()}_${sanitizedName.replace(/\.[^.]+$/, "")}`);
+        if (folder) {
+          formData.append("folder", folder);
+        }
 
-        const fileRef = storage.ref().child(storagePath);
-        const metadata = {
-          contentType: file.type || "application/octet-stream",
-        };
+        const response = await fetch(uploadUrl, {
+          method: "POST",
+          body: formData,
+        });
 
-        await fileRef.put(file, metadata);
-        const downloadURL = await fileRef.getDownloadURL();
+        const uploadResult = await response.json().catch(() => null);
+        if (!response.ok) {
+          const message = uploadResult?.error?.message || "Không thể tải file lên Cloudinary.";
+          throw new Error(message);
+        }
 
-        const inferredType = file.type?.startsWith("video/") ? "video" : "image";
+        const uploadedUrl = uploadResult?.secure_url || uploadResult?.url;
+        if (!uploadedUrl) {
+          throw new Error("Cloudinary không trả về URL của file vừa tải lên.");
+        }
+
+        const inferredType = uploadResult?.resource_type === "video" || file.type?.startsWith("video/")
+          ? "video"
+          : "image";
 
         return {
-          src: downloadURL,
+          src: uploadedUrl,
           type: inferredType,
           caption: caption,
           alt: caption || title || sanitizedName,
+          poster: inferredType === "video" ? uploadResult?.thumbnail_url || "" : "",
           mimeType: file.type || "",
         };
       }
@@ -1648,9 +1677,9 @@
           : [];
         const titleValue = (formData.get("title") || "").trim();
 
-        if (selectedMedia.length && !storage) {
+        if (selectedMedia.length && !isCloudinaryUploadReady()) {
           setTimelineFormStatus(
-            "Không thể tải file vì Firebase Storage chưa được cấu hình.",
+            "Không thể tải file vì Cloudinary chưa được cấu hình.",
             "error"
           );
           return;
@@ -1906,12 +1935,6 @@
             firebase.initializeApp(window.FIREBASE_CONFIG);
           }
           firestore = firebase.firestore();
-          if (typeof firebase.storage === "function") {
-            storage = firebase.storage();
-          } else {
-            storage = null;
-            console.warn("Firebase Storage SDK chưa được tải.");
-          }
           isFirebaseReady = true;
           
           // Kiểm tra localStorage để khôi phục trạng thái unlock
@@ -2318,10 +2341,10 @@
           return;
         }
 
-        if (!storage) {
+        if (!isCloudinaryUploadReady()) {
           const status = document.getElementById("timelineAddImageStatus");
           if (status) {
-            status.textContent = "Không thể tải file vì Firebase Storage chưa được cấu hình.";
+            status.textContent = "Không thể tải file vì Cloudinary chưa được cấu hình.";
             status.className = "timeline-form__status timeline-form__status--error";
           }
           return;
