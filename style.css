@@ -245,6 +245,21 @@ body.is-scrolling .floating-hearts span {
   backface-visibility: hidden;
 }
 
+body.site-locked .love-card,
+body.site-locked .floating-hearts {
+  filter: blur(8px);
+  pointer-events: none;
+  user-select: none;
+}
+
+body.site-locked .timeline-password-modal__close {
+  display: none;
+}
+
+body.site-locked .timeline-password-modal__backdrop {
+  cursor: default;
+}
+
 .hero-banner {
   width: 100%;
   border-radius: 28px;

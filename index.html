@@ -306,7 +306,7 @@
           Mật khẩu  💝
         </h2>
         <p class="timeline-password-modal__hint">
-          Nhập mật khẩu để mở khóa form thêm cột mốc nhé!
+          Nhập mật khẩu để vào trang nhé!
         </p>
         <form class="timeline-password" id="timelinePasswordForm" autocomplete="off">
           <label class="timeline-form__field timeline-form__field--full">
@@ -462,6 +462,7 @@
       const TIMELINE_COLLECTION = "timelineEntries";
       const TIMELINE_FORM_PASSWORD = "tuilavoquan";
       const MAX_UPLOAD_SIZE_BYTES = 12 * 1024 * 1024; // ~12MB
+      const REQUIRE_PASSWORD_ON_ENTRY = true;
 
       let storyConfig = null;
       let startDate;
@@ -1112,7 +1113,8 @@
         timelinePasswordModal.hidden = false;
         timelinePasswordModal.classList.add("timeline-password-modal--open");
         document.body.classList.add("timeline-password-modal-open");
-        setTimelinePasswordStatus("Nhập mật khẩu để mở khóa nhé 🌟", "info");
+        document.body.classList.toggle("site-locked", REQUIRE_PASSWORD_ON_ENTRY && !timelineFormUnlocked);
+        setTimelinePasswordStatus("Nhập mật khẩu để vào trang nhé 🌟", "info");
 
         window.requestAnimationFrame(() => {
           timelinePasswordInput?.focus();
@@ -1124,9 +1126,16 @@
           return;
         }
 
+        if (REQUIRE_PASSWORD_ON_ENTRY && !timelineFormUnlocked && !options.force) {
+          setTimelinePasswordStatus("Nhập đúng mật khẩu để vào trang nhé 💗", "warning");
+          timelinePasswordInput?.focus();
+          return;
+        }
+
         timelinePasswordModal.classList.remove("timeline-password-modal--open");
         timelinePasswordModal.hidden = true;
         document.body.classList.remove("timeline-password-modal-open");
+        document.body.classList.remove("site-locked");
         timelinePasswordForm?.reset();
         setTimelinePasswordStatus("");
 
@@ -1773,8 +1782,6 @@
         }
 
         timelineFormUnlocked = true;
-        // Lưu trạng thái unlock vào localStorage
-        localStorage.setItem("timelineFormUnlocked", "true");
         setTimelineSubmitSectionVisibility(true);
         timelinePasswordInput.value = "";
 
@@ -1813,10 +1820,12 @@
           }
         }, 100);
 
-        // Sau khi unlock, mở heart menu modal
-        setTimeout(() => {
-          openHeartMenuModal();
-        }, 300);
+        if (!REQUIRE_PASSWORD_ON_ENTRY) {
+          // Sau khi unlock, mở heart menu modal
+          setTimeout(() => {
+            openHeartMenuModal();
+          }, 300);
+        }
       }
 
       function openHeartMenuModal() {
@@ -1845,10 +1854,6 @@
         closeHeartMenuModal();
         
         if (page === "todo") {
-          // Lưu trạng thái unlock vào localStorage
-          if (timelineFormUnlocked) {
-            localStorage.setItem("timelineFormUnlocked", "true");
-          }
           // Chuyển đến trang todo
           window.location.href = "vieccanlam.html";
         } else if (page === "timeline") {
@@ -1937,29 +1942,21 @@
           firestore = firebase.firestore();
           isFirebaseReady = true;
           
-          // Kiểm tra localStorage để khôi phục trạng thái unlock
-          const savedUnlock = localStorage.getItem("timelineFormUnlocked");
-          if (savedUnlock === "true") {
-            timelineFormUnlocked = true;
-            unlockHeart?.classList.add("heart--unlocked");
-            setTimelineSubmitSectionVisibility(true);
-            if (timelineForm) {
-              timelineForm.hidden = false;
-            }
-          }
-          
           if (timelineFormUnlocked) {
             setTimelineFormEnabled(true);
             setTimelineFormStatus("Kể thêm cột mốc mới nhé 💖", "success");
           } else {
             setTimelineFormEnabled(false);
-            setTimelineFormStatus("Nhập mật khẩu để mở khóa nhé 🌟", "info");
+            setTimelineFormStatus("Nhập mật khẩu để vào trang nhé 🌟", "info");
             if (timelinePasswordForm) {
               timelinePasswordForm.hidden = false;
             }
-            setTimelinePasswordStatus("Nhập mật khẩu để mở khóa nhé 🌟", "info");
+            setTimelinePasswordStatus("Nhập mật khẩu để vào trang nhé 🌟", "info");
           }
           subscribeToTimelineCollection();
+          if (REQUIRE_PASSWORD_ON_ENTRY && !timelineFormUnlocked) {
+            openTimelinePasswordModal();
+          }
         } catch (error) {
           console.error(error);
           setTimelineFormEnabled(false);
@@ -2672,6 +2669,7 @@
         timelinePasswordModal.addEventListener("click", (event) => {
           const target = event.target;
           if (target && "passwordModalClose" in target.dataset) {
+            event.preventDefault();
             closeTimelinePasswordModal();
           }
         });
