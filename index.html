@@ -77,7 +77,7 @@
         </div>
         <div class="person">
           <div class="avatar">
-            <img id="avatarB" src="assets/diemquynh.jpg" alt="Châu Nguyễn Diễm Quỳnh" />
+            <img id="avatarB" src="assets/diemquynh2.jpg" alt="Châu Nguyễn Diễm Quỳnh" />
           </div>
           <div class="name-tag" id="nameB">Tên người B</div>
           <div class="zodiac-tag" id="zodiacB" hidden>Cung hoàng đạo</div>
@@ -2755,6 +2755,22 @@
         timelineForm.addEventListener("submit", handleTimelineSubmit);
       }
 
+      function setupScrollPerformanceMode() {
+        let scrollTimer = 0;
+
+        window.addEventListener(
+          "scroll",
+          () => {
+            document.body.classList.add("is-scrolling");
+            window.clearTimeout(scrollTimer);
+            scrollTimer = window.setTimeout(() => {
+              document.body.classList.remove("is-scrolling");
+            }, 160);
+          },
+          { passive: true }
+        );
+      }
+
       const timelineAddImageModal = document.getElementById("timelineAddImageModal");
       const timelineAddImageForm = document.getElementById("timelineAddImageForm");
       const timelineAddImageFile = document.getElementById("timelineAddImageFile");
@@ -2782,6 +2798,7 @@
       }
 
       setupLightboxInfrastructure();
+      setupScrollPerformanceMode();
       setupTimeSlider();
       initStory();
       initFirebaseTimeline();
